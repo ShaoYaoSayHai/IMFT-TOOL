@@ -25,6 +25,7 @@ SOURCES += \
     SerialSource/base_serial_port.cpp \
     SerialSource/serialworker.cpp \
     Table/tablecontrol.cpp \
+    Tasks/testtask.cpp \
     hexprintf.cpp \
     main.cpp \
     mainwindow.cpp
@@ -37,6 +38,7 @@ HEADERS += \
     SerialSource/base_serial_port.h \
     SerialSource/serialworker.h \
     Table/tablecontrol.h \
+    Tasks/testtask.h \
     hexprintf.h \
     mainwindow.h
 
