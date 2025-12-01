@@ -18,6 +18,8 @@
 
 #include <QTimer>
 
+#include "./FileReadWrite/filerw.h"
+
 typedef struct DeviceInfo{
     QByteArray SN ;
     QByteArray slaveID ;
@@ -55,6 +57,8 @@ private:
     // 定时器 用作发送0xAA 和 0x4045读取对应的SN号
     QTimer *pxTimerReadSN = new QTimer(this) ;
 
+    // 测试XML读写
+    QList<CLTDeviceInfo> DeviceCLInfo ;
 
 public slots:
 
@@ -73,9 +77,10 @@ public slots:
     void RefreshSerialPorts();
     // GUI Table 初始化函数
     void GUI_TableInit();
-
     // 读取SN号的定时器函数
     void onTimerTimeoutReadSN();
+    // 主动向所有的从机控制阀发送信号
+    void sendDeviceControlSignal( int slaveID , int status );
 
 private slots:
 

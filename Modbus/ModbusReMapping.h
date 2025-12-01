@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// 许可声明：本文件依据 GNU LGPL v3 许可条款分发与使用。
+// 完整许可文本见项目根目录：LPGL3.md
+
 #ifndef _MODBUS_RE_MAPPING_H_
 #define _MODBUS_RE_MAPPING_H_
 
@@ -39,13 +43,13 @@ int ParseModbusPressureInTotal(QByteArray &data);
  * @param data
  * @return
  */
-QByteArray ParseGtDeviceReturnMsg(QByteArray &data) ;
+QByteArray ParseGtDeviceReturnMsg(QByteArray &data);
 
 /**
  * @brief 解析Modbus GT-Air压力传感器读取数据
  * @param data 包含Modbus GT-Air压力传感器读取数据的QByteArray对象
  * @return 解析得到的压力值（单位：Pa）
  */
-int ParseGtAirPressureRead(QByteArray &data)  ;
+int ParseGtAirPressureRead(QByteArray &data);
 
 #endif // _MODBUS_RE_MAPPING_H_

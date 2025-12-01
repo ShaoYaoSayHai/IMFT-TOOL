@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// 许可声明：本文件依据 GNU LGPL v3 许可条款分发与使用。
+// 完整许可文本见项目根目录：LPGL3.md
 
 #ifndef _MODBUS_WRITE_BUILD_H_
 #define _MODBUS_WRITE_BUILD_H_
@@ -15,7 +18,7 @@
  * @return
  */
 QByteArray BuildWriteGtDevice(uint8_t slaveId, uint16_t regAddr,
-                              uint8_t *regVal, uint8_t len) ;
+                              uint8_t *regVal, uint8_t len);
 
 /**
  * @brief 向加糖通信协议读取
@@ -34,7 +37,7 @@ QByteArray BuildReadGtDevice(uint8_t slaveAddress, uint16_t regAddr);
  * @return
  */
 QByteArray BuildWriteModbusDevice(uint8_t slaveAddr, uint16_t regAddr,
-                                  uint8_t *regVal, uint8_t len) ;
+                                  uint8_t *regVal, uint8_t len);
 
 /**
  * @brief 向Modbus设备读取数据
@@ -44,7 +47,6 @@ QByteArray BuildWriteModbusDevice(uint8_t slaveAddr, uint16_t regAddr,
  * @return
  */
 QByteArray BuildReadModbusDevice(uint8_t slaveAddr, uint16_t regAddr,
-                                 uint8_t len) ;
-
+                                 uint8_t len);
 
 #endif

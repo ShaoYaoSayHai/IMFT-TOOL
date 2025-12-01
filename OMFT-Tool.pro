@@ -1,6 +1,7 @@
 QT       += core gui
 QT       += serialport
 QT       += network
+QT       += xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,6 +19,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    FileReadWrite/filerw.cpp \
     Logs/logs.cpp \
     Modbus/ModbusReMapping.cpp \
     Modbus/ModbusWriteBuild.cpp \
@@ -25,12 +27,14 @@ SOURCES += \
     SerialSource/base_serial_port.cpp \
     SerialSource/serialworker.cpp \
     Table/tablecontrol.cpp \
-    Tasks/testtask.cpp \
+    Tasks/test_loop.cpp \
+    Tasks/testworker.cpp \
     hexprintf.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    FileReadWrite/filerw.h \
     Logs/logs.h \
     Modbus/ModbusReMapping.h \
     Modbus/ModbusWriteBuild.h \
@@ -38,7 +42,8 @@ HEADERS += \
     SerialSource/base_serial_port.h \
     SerialSource/serialworker.h \
     Table/tablecontrol.h \
-    Tasks/testtask.h \
+    Tasks/test_loop.h \
+    Tasks/testworker.h \
     hexprintf.h \
     mainwindow.h
 

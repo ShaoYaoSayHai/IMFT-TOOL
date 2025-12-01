@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Root>
+    <!-- 控制阀设备数 -->
+    <ParentDeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA1</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA2</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA3</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA4</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA5</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA6</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA7</DeviceAddress> 
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA8</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+    </ParentDeviceNode>
+</Root>

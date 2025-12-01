@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// 许可声明：本文件依据 GNU LGPL v3 许可条款分发与使用。
+// 完整许可文本见项目根目录：LPGL3.md
+
 #ifndef BASESERIALPORT_H
 #define BASESERIALPORT_H
 
@@ -6,57 +10,53 @@
 #include <QSerialPortInfo>
 #include <QTimer>
 
-
-class BaseSerialPort : public QObject
-{
-    Q_OBJECT
+class BaseSerialPort : public QObject {
+  Q_OBJECT
 public:
-    explicit BaseSerialPort(QObject *parent = nullptr);
+  explicit BaseSerialPort(QObject *parent = nullptr);
 
-    ~BaseSerialPort();
+  ~BaseSerialPort();
 
-    enum ConnectStatus{
-        Error ,
-        Connected ,
-        UnConnected ,
-    };
-    // 注册成QT独有的Enum
-    Q_ENUM(ConnectStatus) ;
+  enum ConnectStatus {
+    Error,
+    Connected,
+    UnConnected,
+  };
+  // 注册成QT独有的Enum
+  Q_ENUM(ConnectStatus);
 
-    bool getQSerialPortPtr();
+  bool getQSerialPortPtr();
 
 private:
-
-    // 串口指针
-    QSerialPort  *pxSerialPort = nullptr ;
-    // 是否连接的判断值
-    bool bsp_connected = false ;
+  // 串口指针
+  QSerialPort *pxSerialPort = nullptr;
+  // 是否连接的判断值
+  bool bsp_connected = false;
 
 public slots:
-    // 公开接口
-    /* 串口初始化 */
-    void SerialPortInit();
-    /* 串口连接 */
-    void SerialPortConnect( QString portName , int baudRate );
-    /* 串口发送数据 */
-//    void SerialPortWrite( QByteArray data );
-    void SerialPortWrite( char *buffer , int len );
+  // 公开接口
+  /* 串口初始化 */
+  void SerialPortInit();
+  /* 串口连接 */
+  void SerialPortConnect(QString portName, int baudRate);
+  /* 串口发送数据 */
+  //    void SerialPortWrite( QByteArray data );
+  void SerialPortWrite(char *buffer, int len);
 
-    /* 串口读取 */
-    void SerialPortReadAll();
+  /* 串口读取 */
+  void SerialPortReadAll();
 
-    /* 断开连接 */
-    void SerialPortDisconnect();
-
+  /* 断开连接 */
+  void SerialPortDisconnect();
 
 signals:
 
-    void ret_connect_status( int status );
+  void ret_connect_status(int status);
 
-    void ret_read_data( QByteArray data );
+  void ret_read_data(QByteArray data);
 
 private slots:
-    void SerialPortErrorHappend(QSerialPort::SerialPortError error);
+  void SerialPortErrorHappend(QSerialPort::SerialPortError error);
 };
 
 #endif // BASESERIALPORT_H
