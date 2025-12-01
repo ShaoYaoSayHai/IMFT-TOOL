@@ -131,6 +131,8 @@ void MainWindow::GUI_TableInit() {
             // 在这里直接处理序列号更新逻辑
             DeviceInfo device;
             device.SN = data;
+            if( data.size() > 2 )
+            device.slaveID = data.mid( data.size()-2 , data.size() );
             GT_DeviceList.append(device);
             int size = GT_DeviceList.size();
             pxTable->SetCellItem(size, 1, GT_DeviceList.at(size - 1).SN);

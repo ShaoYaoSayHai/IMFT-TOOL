@@ -33,9 +33,12 @@ public slots:
 
     // 控制所有电磁阀
     void onControlAllValveTool();
-
+    // 批量执行
     void onReadAllGTDevicePressure( QList<DeviceInfo> list );
-
+    // 执行单次的产测模式进入
+    QByteArray onSetGTDeviceInFactoryMode(QByteArray address ) ;
+    // 执行所有电磁阀关闭
+    QByteArray onSetCTLDeviceCloseVal( QByteArray address );
 
 signals:
 
