@@ -20,14 +20,9 @@
 
 #include "./FileReadWrite/filerw.h"
 
-typedef struct DeviceInfo{
-    QByteArray SN ;
-    QByteArray slaveID ;
-    int airPress ;
-    int infPress ;
-    int endPress ;
-    int Status ;
-}DeviceInfo;
+#include "./Tasks/testworker.h"
+
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -56,9 +51,8 @@ private:
     QList<DeviceInfo> GT_DeviceList ;
     // 定时器 用作发送0xAA 和 0x4045读取对应的SN号
     QTimer *pxTimerReadSN = new QTimer(this) ;
-
-    // 测试XML读写
-    QList<CLTDeviceInfo> DeviceCLInfo ;
+    // 任务线程测试任务
+    TestWorker *pxTestWorkerHandler = new TestWorker(this) ;
 
 public slots:
 

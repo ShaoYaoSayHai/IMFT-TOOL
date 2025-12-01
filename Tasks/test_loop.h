@@ -8,24 +8,39 @@
 #include <QWidget>
 
 #include <QTimer>
+#include "./Modbus/gt_modbus.h"
+#include "./FileReadWrite/filerw.h"
 
-class TestTask : public QWidget {
-  Q_OBJECT
+class TestLoop : public QObject {
+    Q_OBJECT
 public:
-  explicit TestTask(QWidget *parent = nullptr);
+    explicit TestLoop(QObject *parent = nullptr);
 
-  ~TestTask();
+    ~TestLoop();
+
+    // 根据XML文件读取到的设备信息
+    QList<CLTDeviceInfo> DeviceCLInfo ;
 
 private:
 
-    QTimer *pxTimerSendOpenFireCmd = nullptr ;// 点火开阀的控制定时器
+    GT_Modbus GT_ModbusHandler ;
 
 public slots:
 
     void TestTaskInit();
 
+    void TestTaskDeinit();
+
+    // 控制所有电磁阀
+    void onControlAllValveTool();
+
+    void onReadAllGTDevicePressure( QList<DeviceInfo> list );
+
 
 signals:
+
+    void sendMethodToSerial( const QByteArray &data );
+
 };
 
 #endif // TESTTASK_H

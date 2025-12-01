@@ -9,18 +9,31 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
   ui->setupUi(this);
 
+  // 注册 DeviceInfo 类型
+  qRegisterMetaType<DeviceInfo>("DeviceInfo");
+  // 注册 QList<DeviceInfo> 类型（这是解决你错误的核心）
+  qRegisterMetaType<QList<DeviceInfo>>("QList<DeviceInfo>");
+
   SerialWorkerInit();
   // GUI Table
   GUI_TableInit();
 
-  // 上电初始控制阀 读取配置文件
-  DeviceCLInfo = readXmlToStruct( "./buildConfig.xml" ) ;
+  // 设置测试任务的控制阀内容
+  pxTestWorkerHandler->startWorker() ;
+
+  // 连接槽函数
+  connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::sendMethodToSerial , pxSerialWorkerUART_Handler , &SerialWorker::writeData );
 }
 
 MainWindow::~MainWindow() {
   // 回收SerialWorker类
   if (pxSerialWorkerUART_Handler) {
     pxSerialWorkerUART_Handler->stopWorker();
+  }
+
+  if( pxTestWorkerHandler )
+  {
+      pxTestWorkerHandler->stopWorker() ;
   }
 
   // UI类回收
@@ -143,8 +156,7 @@ void MainWindow::onTimerTimeoutReadSN() {
   if (!ok) {
     return;
   }
-  QByteArray qbyData =
-      GT_ModbusHandler.GT_ModbusWrite(tempSlaveID, 0x03, 0x4045, NULL, 0, NULL);
+  QByteArray qbyData = GT_ModbusHandler.GT_ModbusWrite(tempSlaveID, 0x03, 0x4045, NULL, 0, NULL);
   HexPrintf(qbyData);
   pxSerialWorkerUART_Handler->writeData(qbyData);
 }
@@ -155,7 +167,8 @@ void MainWindow::onTimerTimeoutReadSN() {
  */
 void MainWindow::sendDeviceControlSignal( int slaveID , int status )
 {
-
+    Q_UNUSED(status) ;
+    Q_UNUSED(slaveID) ;
 }
 
 void MainWindow::onSerialWorkerReadData(const QByteArray &data) {
@@ -181,10 +194,12 @@ void MainWindow::on_pushButton_PortRefresh_clicked() { RefreshSerialPorts(); }
 void MainWindow::on_pushButton_5_clicked() {
   //    QByteArray qbyData = GT_ModbusHandler.GT_ModbusWrite( 0xAA , 0x03 ,
   //    0xA0A0 , NULL , 0 , NULL ) ;
-  QByteArray qbyData =
-      GT_ModbusHandler.GT_ModbusWrite(0x0A, 0x03, 0x4012, NULL, 0, NULL);
-  HexPrintf(qbyData);
-  pxSerialWorkerUART_Handler->writeData(qbyData);
+//  QByteArray qbyData =
+//      GT_ModbusHandler.GT_ModbusWrite(0x0A, 0x03, 0x4012, NULL, 0, NULL);
+//  HexPrintf(qbyData);
+//  pxSerialWorkerUART_Handler->writeData(qbyData);
+
+    pxTestWorkerHandler->onTakeStep1Test( GT_DeviceList ) ;
 }
 
 void MainWindow::on_pushButton_6_clicked() {

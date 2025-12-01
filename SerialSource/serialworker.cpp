@@ -123,4 +123,5 @@ void SerialWorker::onThreadStarted()
 void SerialWorker::onThreadFinished()
 {
     qDebug() << "SerialWorker: thread finished";
+    m_serial->deleteLater() ;
 }

@@ -8,6 +8,19 @@
 #include "ModbusReMapping.h"
 #include "ModbusWriteBuild.h"
 #include <QObject>
+#include <QMetaType> // 确保包含这个头文件
+
+typedef struct DeviceInfo{
+    QByteArray SN ;
+    QByteArray slaveID ;
+    int airPress ;
+    int infPress ;
+    int endPress ;
+    int Status ;
+}DeviceInfo;
+
+// 声明元类型
+Q_DECLARE_METATYPE(DeviceInfo)
 
 class GT_Modbus : public QObject {
   Q_OBJECT
