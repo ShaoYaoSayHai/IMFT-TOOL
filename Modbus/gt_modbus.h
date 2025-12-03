@@ -22,6 +22,11 @@ typedef struct DeviceInfo {
   int endPressUpdateFlag;
 } DeviceInfo;
 
+typedef struct DoTestType {
+  bool ChaoYaTest;
+  bool QianYaTest;
+} DoTestType;
+
 #define REG_GT_AIRP (0x4001)
 #define REG_GT_FAQIAN (0x4010)
 #define REG_GT_FAHOU (0x4012)

@@ -281,5 +281,57 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1) {
  * @brief 欠压功能测试
  */
 void MainWindow::on_pushButton_clicked() {
+  DoTestFlag.QianYaTest = true;
   pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
+}
+
+void MainWindow::onTableMapping() {
+  if (DoTestFlag.QianYaTest) {
+    // 当执行完循环之后，执行标志位判定，判定都是TRUE则执行数据的相减
+    for (DeviceInfo &device : GT_DeviceList) {
+      if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
+        uint32_t pressDiff = device.infPress - device.airPress;
+        if (pressDiff < 800) {
+          pxTable->SetCellItem(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              QString::number(pressDiff).toUtf8());
+          pxTable->SetCellColor(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              TableControl::GREEN);
+          DeviceInfoReset(device);
+        } else {
+          pxTable->SetCellItem(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              QString::number(pressDiff).toUtf8());
+          pxTable->SetCellColor(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              TableControl::RED);
+          DeviceInfoReset(device);
+        }
+      }
+    }
+  } else if (DoTestFlag.ChaoYaTest) {
+    for (DeviceInfo &device : GT_DeviceList) {
+      if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
+        uint32_t pressDiff = device.infPress - device.airPress;
+        if (pressDiff > 6000) {
+          pxTable->SetCellItem(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              QString::number(pressDiff).toUtf8());
+          pxTable->SetCellColor(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              TableControl::GREEN);
+          DeviceInfoReset(device);
+        } else {
+          pxTable->SetCellItem(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              QString::number(pressDiff).toUtf8());
+          pxTable->SetCellColor(
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              TableControl::RED);
+          DeviceInfoReset(device);
+        }
+      }
+    }
+  }
 }
