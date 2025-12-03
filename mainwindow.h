@@ -45,7 +45,7 @@ private:
 
     Logs *pxBrowserLogs = nullptr ;
 
-    GT_Modbus GT_ModbusHandler ;
+//    GT_Modbus GT_ModbusHandler ;
 
     // 设备列表
     QList<DeviceInfo> GT_DeviceList ;
@@ -83,5 +83,6 @@ private slots:
     void on_pushButton_5_clicked();
     void on_pushButton_6_clicked();
     void on_lineEdit_textChanged(const QString &arg1);
+    void on_pushButton_clicked();
 };
 #endif // MAINWINDOW_H

@@ -30,9 +30,9 @@ public:
   int readFaqianPressureTime = 100;
   int readFahouPressureTime = 100;
 
-private:
   GT_Modbus GT_ModbusHandler;
 
+private:
 public slots:
 
   void TestTaskInit();
@@ -62,6 +62,8 @@ public slots:
   void onTestBaseCmdAll();
   // 执行所有的压力读取
   void GT_ReadListAllPressure(QList<DeviceInfo> list);
+  // 读取所有阀门状态
+  void GT_ReadDeviceSwitchStatusAll(QList<DeviceInfo> data);
 
   // ================================================================
   // 执行所有电磁阀关闭
@@ -73,12 +75,20 @@ public slots:
   void CTL_SetDeviceSwitchOperate(QList<CLTDeviceInfo> data);
   // 依次关闭所有阀门
   void CTL_SetDeviceSwitchCloseAll(QList<CLTDeviceInfo> data);
+  // 控制设备开关操作 打开所有的阀门
+  void CTL_SetDeviceSwitchOpenAll(QList<CLTDeviceInfo> data);
+  // 开启进气端阀门
+  void CTL_SetInputControlDeviceSwitchOpen(uint8_t address);
+  // 关闭进气端阀门
+  void CTL_SetInputControlDeviceSwitchClose(uint8_t address);
 signals:
 
+  // 调用串口总线发送数据
   void sendMethodToSerial(const QByteArray &data);
-
   // 模拟点火开阀完成 执行下一步动作
   void simulateIgnitionComplete();
+  // 读取压力完成
+  void readPressureComplete();
 };
 
 #endif // TESTTASK_H

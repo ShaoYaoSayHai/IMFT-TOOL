@@ -25,18 +25,19 @@ void TestLoop::TestTaskInit() {
     qDebug() << "读取开关时间失败";
     return;
   }
-  qDebug() << "SwitchOpenTime:" << switchOpenTime;
-  qDebug() << "SwitchCloseTime:" << switchCloseTime;
-  qDebug() << "SwitchResetTime:" << switchResetTime;
 
   if (!readPressureTimeConfig("./buildConfig.xml", readAirPressureTime,
                               readFaqianPressureTime, readFahouPressureTime)) {
     qDebug() << "读取压力时间失败";
     return;
   }
-  qDebug() << "readAirPressureTime:" << readAirPressureTime;
-  qDebug() << "readFaqianPressureTime:" << readFaqianPressureTime;
-  qDebug() << "readFahouPressureTime:" << readFahouPressureTime;
+
+  uint8_t a1Addr = 0, a2Addr = 0;
+  if (!readInputControlSwitch("./buildConfig.xml", a1Addr, a2Addr)) {
+    qDebug() << "读取输入控制开关失败";
+    return;
+  }
+  qDebug() << "a1Addr:" << a1Addr << "a2Addr:" << a2Addr;
 }
 
 void TestLoop::TestTaskDeinit() {}
@@ -45,9 +46,9 @@ void TestLoop::onControlAllValveTool() {
   QByteArray qbyData;
   bool ok = false;
   for (int i = 0; i < DeviceCLInfo.size(); i++) {
-    int value = DeviceCLInfo.at(i).address.toInt(&ok, 16); // value为161，即0xA1
-    qbyData =
-        GT_ModbusHandler.GT_ModbusWrite(value, 0x03, 0x4045, NULL, 0, NULL);
+    int value = DeviceCLInfo.at(i).address.toInt(&ok, 10);
+    qbyData = GT_ModbusHandler.GT_ModbusWrite(value, 0x03, REG_GT_READSN, NULL,
+                                              0, NULL);
     emit sendMethodToSerial(qbyData);
     QThread::msleep(1000);
   }
@@ -81,7 +82,7 @@ void TestLoop::onReadAllGTDevicePressure(QList<DeviceInfo> list) {
 QByteArray TestLoop::GT_BuildDeviceFactoryModeEnter(QByteArray address) {
   bool ok = false;
   QByteArray qbyData;
-  int value = address.toInt(&ok, 16); // GT 设备地址提取
+  int value = address.toInt(&ok, 10); // GT 设备地址提取
   uint8_t factoryModeBuffer[7] = "rcyigb";
   factoryModeBuffer[6] = 0x01;
   qbyData = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, REG_GT_FACTORY,
@@ -98,7 +99,7 @@ QByteArray TestLoop::GT_BuildDeviceFactoryModeEnter(QByteArray address) {
 QByteArray TestLoop::GT_BuildDeviceFactoryModeExit(QByteArray address) {
   bool ok = false;
   QByteArray qbyData;
-  int value = address.toInt(&ok, 16); // GT 设备地址提取
+  int value = address.toInt(&ok, 10); // GT 设备地址提取
   uint8_t factoryModeBuffer[7] = "rcyigb";
   factoryModeBuffer[6] = 0x00;
   qbyData = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, REG_GT_FACTORY,
@@ -115,7 +116,7 @@ QByteArray TestLoop::GT_BuildDeviceFactoryModeExit(QByteArray address) {
 QByteArray TestLoop::GT_BuildDeviceSwitch(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 16); // slaveID
+  int value = address.toInt(&ok, 10); // slaveID
   ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x03, REG_GT_SWITCH, NULL, 0,
                                         NULL);
   return ret;
@@ -129,7 +130,7 @@ QByteArray TestLoop::GT_BuildDeviceSwitch(QByteArray address) {
 QByteArray TestLoop::GT_BuildDeviceAirPressure(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 16); // slaveID
+  int value = address.toInt(&ok, 10); // slaveID
   ret =
       GT_ModbusHandler.GT_ModbusWrite(value, 0x03, REG_GT_AIRP, NULL, 0, NULL);
   return ret;
@@ -143,7 +144,7 @@ QByteArray TestLoop::GT_BuildDeviceAirPressure(QByteArray address) {
 QByteArray TestLoop::GT_BuildDeviceFaqianPressure(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 16); // slaveID
+  int value = address.toInt(&ok, 10); // slaveID
   ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x03, REG_GT_FAQIAN, NULL, 0,
                                         NULL);
   return ret;
@@ -157,7 +158,7 @@ QByteArray TestLoop::GT_BuildDeviceFaqianPressure(QByteArray address) {
 QByteArray TestLoop::GT_BuildDeviceFahouPressure(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 16); // slaveID
+  int value = address.toInt(&ok, 10); // slaveID
   ret =
       GT_ModbusHandler.GT_ModbusWrite(value, 0x03, REG_GT_FAHOU, NULL, 0, NULL);
   return ret;
@@ -171,7 +172,7 @@ QByteArray TestLoop::GT_BuildDeviceFahouPressure(QByteArray address) {
 QByteArray TestLoop::GT_BuildDeviceErrorClear(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 16); // slaveID
+  int value = address.toInt(&ok, 10); // slaveID
   ret =
       GT_ModbusHandler.GT_ModbusWrite(value, 0x03, REG_GT_CLEAR, NULL, 0, NULL);
   return ret;
@@ -205,19 +206,31 @@ void TestLoop::onTestBaseCmdAll() {
 void TestLoop::GT_ReadListAllPressure(QList<DeviceInfo> list) {
   // 先读取大气压
   for (int i = 0; i < list.size(); i++) {
-//    emit sendMethodToSerial(GT_BuildDeviceAirPressure(list.at(i).address));
-//    QThread::msleep(100);
-//    emit sendMethodToSerial(GT_BuildDeviceFahouPressure(list.at(i).address));
-//    QThread::msleep(100);
-//    emit sendMethodToSerial(GT_BuildDeviceFaqianPressure(list.at(i).address));
-//    QThread::msleep(100);
+    emit sendMethodToSerial(
+        GT_BuildDeviceAirPressure(list.at(i).slaveID)); // 发送大气压读取
+    QThread::msleep(100);
+    //    emit sendMethodToSerial(
+    //        GT_BuildDeviceFaqianPressure(list.at(i).slaveID)); // 阀前读取
+    //    QThread::msleep(100);
+    // emit sendMethodToSerial(
+    //     GT_BuildDeviceFahouPressure(list.at(i).slaveID)); // 阀后读取
+    // QThread::msleep(100);
   }
+  // 然后读取阀前压力
+  for (int i = 0; i < list.size(); i++) {
+    emit sendMethodToSerial(
+        GT_BuildDeviceFaqianPressure(list.at(i).slaveID)); // 阀前读取
+    QThread::msleep(100);
+  }
+
+  QThread::msleep(1000);
+  emit readPressureComplete(); // 读取压力执行完毕
 }
 
 QByteArray TestLoop::CTL_BuildDeviceSwitchClose(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 16); // value为161，即0xA1
+  int value = address.toInt(&ok, 10); //
   uint8_t buffer[1] = {0x00};
   ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, 0x2001, buffer, 1, NULL);
   return ret;
@@ -226,7 +239,7 @@ QByteArray TestLoop::CTL_BuildDeviceSwitchClose(QByteArray address) {
 QByteArray TestLoop::CTL_BuildDeviceSwitchOpen(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 16); // value为161，即0xA1
+  int value = address.toInt(&ok, 10); //
   uint8_t buffer[1] = {0x01};
   ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, 0x2001, buffer, 1, NULL);
   return ret;
@@ -257,6 +270,53 @@ void TestLoop::CTL_SetDeviceSwitchCloseAll(QList<CLTDeviceInfo> data) {
   for (int i = 0; i < data.size(); i++) {
     emit sendMethodToSerial(
         CTL_BuildDeviceSwitchClose(data[i].address.toUtf8()));
+    QThread::msleep(this->switchResetTime);
+  }
+}
+
+/**
+ * @brief 控制设备开关操作 打开所有的阀门
+ * @param data
+ */
+void TestLoop::CTL_SetDeviceSwitchOpenAll(QList<CLTDeviceInfo> data) {
+  for (int i = 0; i < data.size(); i++) {
+    emit sendMethodToSerial(
+        CTL_BuildDeviceSwitchOpen(data[i].address.toUtf8()));
+    QThread::msleep(this->switchResetTime);
+  }
+}
+
+/**
+ * @brief 控制输入控制设备开关操作 打开所有的阀门
+ * @param address
+ */
+void TestLoop::CTL_SetInputControlDeviceSwitchOpen(uint8_t address) {
+  QByteArray data;
+  data.append(address);
+  emit sendMethodToSerial(
+      CTL_BuildDeviceSwitchOpen(data)); // 输入参数必须是QByteArray
+  QThread::msleep(this->switchResetTime);
+}
+
+/**
+ * @brief 控制输入控制设备开关操作 打开所有的阀门
+ * @param address
+ */
+void TestLoop::CTL_SetInputControlDeviceSwitchClose(uint8_t address) {
+  QByteArray data;
+  data.append(address);
+  emit sendMethodToSerial(
+      CTL_BuildDeviceSwitchClose(data)); // 输入参数必须是QByteArray
+  QThread::msleep(this->switchResetTime);
+}
+
+/**
+ * @brief 读取所有阀门状态
+ * @param data
+ */
+void TestLoop::GT_ReadDeviceSwitchStatusAll(QList<DeviceInfo> data) {
+  for (int i = 0; i < data.size(); i++) {
+    emit sendMethodToSerial(GT_BuildDeviceSwitch(data[i].slaveID));
     QThread::msleep(this->switchResetTime);
   }
 }

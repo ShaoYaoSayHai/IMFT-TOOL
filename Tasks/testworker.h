@@ -35,7 +35,11 @@ public slots:
     void onTaskBaseCommondTest();
     // 模拟点火开阀顺序动作
     void onSimulateIgnitionAction();
-
+    // 读取所有阀门状态
+//    void onReadAllValveStatus();
+    void onReadAllValveStatus(QList<DeviceInfo> deviceList);
+    // 读取进气端相对压力
+    void onReadAllBoardPressure(QList<DeviceInfo> deviceList);
 signals:
 
 };

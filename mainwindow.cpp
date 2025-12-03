@@ -3,6 +3,7 @@
 // 完整许可文本见项目根目录：LPGL3.md
 
 #include "mainwindow.h"
+#include "Modbus/gt_modbus.h"
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -14,16 +15,15 @@ MainWindow::MainWindow(QWidget *parent)
   // 注册 QList<DeviceInfo> 类型（这是解决你错误的核心）
   qRegisterMetaType<QList<DeviceInfo>>("QList<DeviceInfo>");
   qRegisterMetaType<QList<CLTDeviceInfo>>("QList<CLTDeviceInfo>");
+  // 设置测试任务的控制阀内容
+  pxTestWorkerHandler->startWorker();
+  // 连接槽函数
+  connect(pxTestWorkerHandler->pxTestLoop, &TestLoop::sendMethodToSerial,
+          pxSerialWorkerUART_Handler, &SerialWorker::writeData);
 
   SerialWorkerInit();
   // GUI Table
   GUI_TableInit();
-
-  // 设置测试任务的控制阀内容
-  pxTestWorkerHandler->startWorker() ;
-
-  // 连接槽函数
-  connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::sendMethodToSerial , pxSerialWorkerUART_Handler , &SerialWorker::writeData );
 }
 
 MainWindow::~MainWindow() {
@@ -32,9 +32,8 @@ MainWindow::~MainWindow() {
     pxSerialWorkerUART_Handler->stopWorker();
   }
 
-  if( pxTestWorkerHandler )
-  {
-      pxTestWorkerHandler->stopWorker() ;
+  if (pxTestWorkerHandler) {
+    pxTestWorkerHandler->stopWorker();
   }
 
   // UI类回收
@@ -120,24 +119,79 @@ void MainWindow::GUI_TableInit() {
   // 日志系统
   pxBrowserLogs = new Logs(ui->textBrowser, this);
 
-  //    ui->pushButton_6->setVisible(false) ;
-  //    pxBrowserLogs->LogBrowserWrite("test code") ;
-  connect(&GT_ModbusHandler, &GT_Modbus::sig_updateAirPressure, this,
-          [=](int location, int value) {
-            // 在这里直接处理大气压值更新逻辑
-            qDebug() << "位置:" << location << "大气压值:" << value;
-          });
-  connect(&GT_ModbusHandler, &GT_Modbus::sig_updateSN, this,
-          [=](QByteArray data) {
+  /**
+   * @brief 连接 Modbus 信号槽，更新大气压值
+   * 此处除了更新大气压之外还应该判定大气压范围，同时根据调用的测试模式来更新窗口和判断标准
+   */
+  connect(
+      &(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
+      &GT_Modbus::sig_updateAirPressure, this,
+      [=](int slaveID, int location, int value) {
+        QByteArray recvSN = QString::number(slaveID).toUtf8();
+        qDebug() << "从机ID:" << slaveID << "位置:" << location
+                 << "大气压值:" << value << "size : " << GT_DeviceList.size();
+        for (DeviceInfo &device : GT_DeviceList) {
+          if (device.slaveID == recvSN) {
+            if (location == GT_Modbus::AIR) {
+              device.airPress = value;
+              device.airPressUpdateFlag = true;
+              qDebug() << "location:" << device.airPressUpdateFlag;
+            } else if (location == GT_Modbus::INF) {
+              device.infPress = value;
+              device.infPressUpdateFlag = true;
+              qDebug() << "location:" << device.infPressUpdateFlag;
+            } else if (location == GT_Modbus::END) {
+              device.endPress = value;
+              device.endPressUpdateFlag = true;
+            }
+          }
+        }
+        // 当执行完循环之后，执行标志位判定，判定都是TRUE则执行数据的相减
+        for (DeviceInfo &device : GT_DeviceList) {
+          if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
+            uint32_t pressDiff = device.infPress - device.airPress;
+            qDebug() << "pressDiff:" << pressDiff;
+            pxTable->SetCellItem(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1),
+                2, QString::number(pressDiff).toUtf8());
+            pxTable->SetCellColor(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1),
+                2, TableControl::GREEN);
+            DeviceInfoReset(device);
+          }
+        }
+      });
+
+  connect(&(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
+          &GT_Modbus::sig_updateSN, this, [=](QByteArray data) {
             // 在这里直接处理序列号更新逻辑
             DeviceInfo device;
             device.SN = data;
-            if( data.size() > 2 )
-            device.slaveID = data.mid( data.size()-2 , data.size() );
+            if (data.size() > 2)
+              device.slaveID = data.mid(data.size() - 2, data.size());
             GT_DeviceList.append(device);
             int size = GT_DeviceList.size();
             pxTable->SetCellItem(size, 1, GT_DeviceList.at(size - 1).SN);
             ui->lineEdit->setText("");
+          });
+  // 槽函数绑定，将结果显示在窗口内
+  connect(&(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
+          &GT_Modbus::sig_updateValveStatus, this,
+          [=](uint8_t slaveID, uint8_t value) {
+            // 在这里直接处理阀门状态更新逻辑
+            qDebug() << "从机地址:" << slaveID << "阀门状态:" << value;
+            qDebug() << "转换后查询地址 - " << QString::number(slaveID);
+            // 遍历整个Table，然后查询到对应的item，value=1表示打开成功，0表示关闭成功
+            int row = (findFirstColumnMatchRow(ui->tableWidget,
+                                               QString::number(slaveID)) +
+                       1);
+            if (value) {
+              pxTable->SetCellItem(row, 4, "PASS");
+              pxTable->SetCellColor(row, 4, TableControl::GREEN);
+            } else {
+              pxTable->SetCellItem(row, 4, "FAIL");
+              pxTable->SetCellColor(row, 4, TableControl::RED);
+            }
           });
 }
 
@@ -159,7 +213,11 @@ void MainWindow::onTimerTimeoutReadSN() {
   if (!ok) {
     return;
   }
-  QByteArray qbyData = GT_ModbusHandler.GT_ModbusWrite(tempSlaveID, 0x03, 0x4045, NULL, 0, NULL);
+  QByteArray qbyData =
+      //      GT_ModbusHandler.GT_ModbusWrite(tempSlaveID, 0x03, 0x4045, NULL,
+      //      0, NULL);
+      pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler.GT_ModbusWrite(
+          tempSlaveID, 0x03, 0x4045, NULL, 0, NULL);
   HexPrintf(qbyData);
   pxSerialWorkerUART_Handler->writeData(qbyData);
 }
@@ -168,19 +226,18 @@ void MainWindow::onTimerTimeoutReadSN() {
  * @brief 向所有控制阀设备从机发送指令
  * @param status
  */
-void MainWindow::sendDeviceControlSignal( int slaveID , int status )
-{
-    Q_UNUSED(status) ;
-    Q_UNUSED(slaveID) ;
+void MainWindow::sendDeviceControlSignal(int slaveID, int status) {
+  Q_UNUSED(status);
+  Q_UNUSED(slaveID);
 }
 
 void MainWindow::onSerialWorkerReadData(const QByteArray &data) {
   QByteArray hexData = data;
-  HexPrintf(hexData);
+  //  HexPrintf(hexData);
   // 在这里做接收的解析
   //    int ret = xModbsuFunc( hexData );
   //    qDebug()<<"ret - "<<ret ;
-  GT_ModbusHandler.GT_RetMsgVerify(hexData);
+  pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler.GT_RetMsgVerify(hexData);
 }
 
 void MainWindow::on_pushButton_PortOpen_clicked() {
@@ -195,16 +252,11 @@ void MainWindow::on_pushButton_PortOpen_clicked() {
 void MainWindow::on_pushButton_PortRefresh_clicked() { RefreshSerialPorts(); }
 
 void MainWindow::on_pushButton_5_clicked() {
-//    QByteArray qbyData = GT_ModbusHandler.GT_ModbusWrite( 0xAA , 0x03 ,
-//    0xA0A0 , NULL , 0 , NULL ) ;
-//    QByteArray qbyData =
-//    GT_ModbusHandler.GT_ModbusWrite(0x0A, 0x03, 0x4012, NULL, 0, NULL);
-//    HexPrintf(qbyData);
-//    pxSerialWorkerUART_Handler->writeData(qbyData);
-
-//    pxTestWorkerHandler->onTakeStep1Test( GT_DeviceList ) ;
-//    pxTestWorkerHandler->onTaskBaseCommondTest() ;
-    pxTestWorkerHandler->onSimulateIgnitionAction();
+  pxTimerReadSN->stop();
+  // pxTestWorkerHandler->onTakeStep1Test(GT_DeviceList);
+  pxTestWorkerHandler->onReadAllValveStatus(GT_DeviceList);
+  //    pxTestWorkerHandler->onTaskBaseCommondTest() ;
+  // pxTestWorkerHandler->onSimulateIgnitionAction();
 }
 
 void MainWindow::on_pushButton_6_clicked() {
@@ -223,4 +275,11 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1) {
   qDebug() << "触发扫码枪 - " << arg1;
   QByteArray data = arg1.toUtf8();
   qDebug() << "SLAVE ADDR - " << data.mid(data.size() - 2, data.size());
+}
+
+/**
+ * @brief 欠压功能测试
+ */
+void MainWindow::on_pushButton_clicked() {
+  pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
 }

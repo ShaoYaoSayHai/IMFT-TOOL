@@ -46,4 +46,15 @@
         <ReadFaqianPressureTime>100</ReadFaqianPressureTime>
         <ReadFahouPressureTime>100</ReadFahouPressureTime>
     </ReadPressureTimeConfig>
+
+    <InputControlSwitch>
+        <InputControlSwitchA1>
+            <SwitchAddress>0xB1</SwitchAddress>
+            <SwitchType>0x0001</SwitchType>
+        </InputControlSwitchA1>
+        <InputControlSwitchA2>
+            <SwitchAddress>0xB2</SwitchAddress>
+            <SwitchType>0x0001</SwitchType>
+        </InputControlSwitchA2>
+    </InputControlSwitch>
 </Root>

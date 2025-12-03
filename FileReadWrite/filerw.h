@@ -32,4 +32,7 @@ bool readPressureTimeConfig(const QString &filePath, int &readAirPressureTime,
                             int &readFaqianPressureTime,
                             int &readFahouPressureTime);
 
+bool readInputControlSwitch(const QString &filePath, uint8_t &a1Addr,
+                            uint8_t &a2Addr);
+
 #endif // FILERW_H

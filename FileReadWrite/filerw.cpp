@@ -64,9 +64,6 @@ QList<CLTDeviceInfo> readXmlToStruct(QString filePath) {
       // 使用聚合初始化创建结构体实例并添加到列表
       devices.append({deviceAddress, deviceType});
 
-      // 或者使用构造函数方式（如果定义了构造函数）
-      // devices.append(DeviceInfo(deviceAddress, deviceType));
-
       qDebug() << "成功读取设备 - 地址:" << deviceAddress
                << "类型:" << deviceType;
     } else {
@@ -194,5 +191,59 @@ bool readPressureTimeConfig(const QString &filePath, int &readAirPressureTime,
   readAirPressureTime = airEl.text().trimmed().toInt();
   readFaqianPressureTime = faqianEl.text().trimmed().toInt();
   readFahouPressureTime = fahouEl.text().trimmed().toInt();
+  return true;
+}
+
+bool readInputControlSwitch(const QString &filePath, uint8_t &a1Addr,
+                            uint8_t &a2Addr) {
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    qDebug() << "[错误] 无法打开文件:" << file.errorString();
+    return false;
+  }
+  QDomDocument doc;
+  QString errorMsg;
+  int errorLine = 0, errorColumn = 0;
+  if (!doc.setContent(&file, false, &errorMsg, &errorLine, &errorColumn)) {
+    qDebug() << "[错误] XML解析失败! 行:" << errorLine << "列:" << errorColumn
+             << "错误:" << errorMsg;
+    file.close();
+    return false;
+  }
+  file.close();
+  QDomElement root = doc.documentElement();
+  if (root.isNull()) {
+    qDebug() << "[错误] 未找到根元素（Root）。";
+    return false;
+  }
+  QDomElement inputSwitch = root.firstChildElement("InputControlSwitch");
+  if (inputSwitch.isNull()) {
+    qDebug() << "[错误] 未找到 InputControlSwitch 节点。";
+    return false;
+  }
+  QDomElement a1El = inputSwitch.firstChildElement("InputControlSwitchA1");
+  QDomElement a2El = inputSwitch.firstChildElement("InputControlSwitchA2");
+  if (a1El.isNull() || a2El.isNull()) {
+    qDebug() << "[错误] 缺少 A1 或 A2 子节点。";
+    return false;
+  }
+  QDomElement a1AddrEl = a1El.firstChildElement("SwitchAddress");
+  QDomElement a1TypeEl = a1El.firstChildElement("SwitchType");
+  QDomElement a2AddrEl = a2El.firstChildElement("SwitchAddress");
+  QDomElement a2TypeEl = a2El.firstChildElement("SwitchType");
+  if (a1AddrEl.isNull() || a1TypeEl.isNull() || a2AddrEl.isNull() ||
+      a2TypeEl.isNull()) {
+    qDebug() << "[错误] A1/A2 子节点内容不完整。";
+    return false;
+  }
+  QString a1Address = a1AddrEl.text().trimmed();
+//  a1Type = a1TypeEl.text().trimmed();
+  QString a2Address = a2AddrEl.text().trimmed();
+//  a2Type = a2TypeEl.text().trimmed();
+
+  a1Addr = a1Address.toUInt(nullptr, 16);
+  //   uint8_t a1TypeVal = a1Type.toUInt(nullptr, 16);
+  a2Addr = a2Address.toUInt(nullptr, 16);
+  //   uint8_t a2TypeVal = a2Type.toUInt(nullptr, 16);
   return true;
 }

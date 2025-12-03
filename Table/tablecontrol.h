@@ -38,4 +38,6 @@ public slots:
 signals:
 };
 
+int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareString) ;
+
 #endif // TABLECONTROL_H

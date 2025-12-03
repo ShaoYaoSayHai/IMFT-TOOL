@@ -61,13 +61,24 @@ void TestWorker::onThreadFinished() {
 }
 
 void TestWorker::onTakeStep1Test(QList<DeviceInfo> deviceList) {
+  // 为空返回
+  if (deviceList.isEmpty()) {
+    return;
+  }
   //    if (pxTestLoop) {
   //        QMetaObject::invokeMethod(pxTestLoop, "onControlAllValveTool",
   //                                  Qt::QueuedConnection);
   //    }
+  //   if (pxTestLoop) {
+  //     // 使用 invokeMethod 进行跨线程调用
+  //     QMetaObject::invokeMethod(pxTestLoop, "onReadAllGTDevicePressure",
+  //                               Qt::QueuedConnection, //
+  //                               使用队列连接确保线程安全
+  //                               Q_ARG(QList<DeviceInfo>, deviceList));
+  //   }
+
   if (pxTestLoop) {
-    // 使用 invokeMethod 进行跨线程调用
-    QMetaObject::invokeMethod(pxTestLoop, "onReadAllGTDevicePressure",
+    QMetaObject::invokeMethod(pxTestLoop, "GT_ReadListAllPressure",
                               Qt::QueuedConnection, // 使用队列连接确保线程安全
                               Q_ARG(QList<DeviceInfo>, deviceList));
   }
@@ -90,3 +101,29 @@ void TestWorker::onSimulateIgnitionAction() {
         Q_ARG(QList<CLTDeviceInfo>, pxTestLoop->DeviceCLInfo));
   }
 }
+
+/**
+ * @brief 读取所有阀门状态
+ * @param deviceList
+ */
+void TestWorker::onReadAllValveStatus( QList<DeviceInfo> deviceList ) {
+  if (pxTestLoop) {
+    QMetaObject::invokeMethod(pxTestLoop, "GT_ReadDeviceSwitchStatusAll",
+                              Qt::QueuedConnection,
+                              Q_ARG(QList<DeviceInfo>, deviceList));
+  }
+}
+
+void TestWorker::onReadAllBoardPressure(QList<DeviceInfo> deviceList) {
+  // 为空返回
+  if (deviceList.isEmpty()) {
+    return;
+  }
+  if (pxTestLoop) {
+    QMetaObject::invokeMethod(pxTestLoop, "GT_ReadListAllPressure",
+                              Qt::QueuedConnection, // 使用队列连接确保线程安全
+                              Q_ARG(QList<DeviceInfo>, deviceList));
+  }
+}
+
+
