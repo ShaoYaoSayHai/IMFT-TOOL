@@ -44,6 +44,8 @@ public slots:
     void OMFT_LowPressureFunc( QList<DeviceInfo> deviceList );
     // 点火开阀执行
     void OMFT_OpenFireFunc( QList<DeviceInfo> deviceList );
+    // 超压测试
+    void OMFT_OverPressureFunc( QList<DeviceInfo> deviceList );
 signals:
 
 };

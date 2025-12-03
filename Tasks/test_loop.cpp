@@ -406,8 +406,26 @@ void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
   QThread::msleep(1000); // 等待1s
   // 读取所有阀门状态
   GT_ReadDeviceSwitchStatusAll( data );
+  QThread::msleep(1000); // 等待1s
   // 关闭进气端阀门
   CTL_SetInputControlDeviceSwitchClose(B1Addr) ;
+}
+
+void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data)
+{
+    // 进入产测模式
+    GT_EnterFactoryModeAll(data);
+
+    QByteArray Addr = QByteArray::number( a2Addr , 16 );
+    CTL_SetInputControlDeviceSwitchOpen( Addr );
+
+    QThread::msleep(3000); // 等待2s
+    // // 执行所有压力读取
+    GT_ReadListAllPressure(data); // 读取所有压力
+    // 关闭进气端阀门
+    CTL_SetInputControlDeviceSwitchClose(Addr) ;
+    // 退出产测模式
+    GT_ExitFactoryModeAll(data);
 }
 
 /**

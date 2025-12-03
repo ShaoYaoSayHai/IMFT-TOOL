@@ -31,7 +31,7 @@ QByteArray GT_Modbus::GT_ModbusWrite(uint8_t slaveAddr, uint8_t funcCode,
 }
 
 int GT_Modbus::GT_RetMsgVerify(QByteArray data) {
-//  qDebug() << "进入VeriFy";
+  //  qDebug() << "进入VeriFy";
   HexPrintf(data);
   // 是否是发出去的地址
   if ((uint8_t)(data.at(0)) != (this->slaveAddr)) {
@@ -46,22 +46,21 @@ int GT_Modbus::GT_RetMsgVerify(QByteArray data) {
       ((uint8_t)(data.at(2)) << 8) | ((uint8_t)(data.at(3)) & 0xFF);
   if (regAddress != regAddr) {
     qDebug() << "regAddress错误" << regAddr;
-//    return GT_Modbus::ERROR;
+    //    return GT_Modbus::ERROR;
   }
   // 以上三点确认的是解析的是发出去的指令内容
   // CRC 校验准备
-  //    QByteArray RET_Array = data.mid( data.size()-2 , data.size() ) ;
-  //    uint8_t crc_l = (uint8_t)( RET_Array.at(1) )  ;
-  //    uint8_t crc_h = (uint8_t)(RET_Array.at(0)) ;
-  //    qDebug()<<"L-"<<crc_l<<"H-"<<crc_h ;
-  //    uint16_t RET_CRC =( crc_h << 8) | ( crc_l & 0xFF) ;
-  //    QByteArray result = data.mid(0, data.size() - 2);
-  //    uint16_t CRC_Code = crc16_MODBUS( result );
-  //    qDebug()<<"RET_CRC - "<<RET_CRC << "-CRC Code - "<<CRC_Code ;
-  //    if( RET_CRC != CRC_Code )
-  //    {
-  //        return GT_Modbus::ERROR ;
-  //    }
+  QByteArray RET_Array = data.mid(data.size() - 2, data.size());
+  uint8_t crc_l = (uint8_t)(RET_Array.at(1));
+  uint8_t crc_h = (uint8_t)(RET_Array.at(0));
+  qDebug() << "L-" << crc_l << "H-" << crc_h;
+  uint16_t RET_CRC = (crc_l << 8) | (crc_h & 0xFF);
+  QByteArray result = data.mid(0, data.size() - 2);
+  uint16_t CRC_Code = crc16_MODBUS(result);
+  qDebug() << "RET_CRC - " << RET_CRC << "-CRC Code - " << CRC_Code;
+  if (RET_CRC != CRC_Code) {
+//    return GT_Modbus::ERROR;
+  }
   qbyData.clear();
   // 开始解析实际数据
   // 解析读取的返回值

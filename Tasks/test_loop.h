@@ -102,6 +102,8 @@ public slots:
   void DO_TaskCheckLowPressure(QList<DeviceInfo> data);
   // ====================== 点火开阀流程执行 ==============================
   void DO_TaskOpenFire(QList<DeviceInfo> data);
+  // ====================== 超压测试流程 =================================
+  void DO_TaskOverPressure( QList<DeviceInfo> data );
 signals:
 
   // 调用串口总线发送数据

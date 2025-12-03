@@ -152,4 +152,17 @@ void TestWorker::OMFT_OpenFireFunc(QList<DeviceInfo> deviceList)
     }
 }
 
+void TestWorker::OMFT_OverPressureFunc(QList<DeviceInfo> deviceList)
+{
+    // DO_TaskOverPressure
+    if (deviceList.isEmpty()) {
+      return;
+    }
+    if (pxTestLoop) {
+      QMetaObject::invokeMethod(pxTestLoop, "DO_TaskOverPressure",
+                                Qt::QueuedConnection, // 使用队列连接确保线程安全
+                                Q_ARG(QList<DeviceInfo>, deviceList));
+    }
+}
+
 

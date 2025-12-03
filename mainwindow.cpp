@@ -383,7 +383,7 @@ void MainWindow::onResetTestFlag()
 void MainWindow::on_pushButton_3_clicked()
 {
     DoTestFlag.ChaoYaTest = true;
-    pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
+    pxTestWorkerHandler->OMFT_OverPressureFunc(GT_DeviceList);
     // 按钮互斥
     SetButtonDisable();
 }
