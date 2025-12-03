@@ -53,6 +53,9 @@ public slots:
   void onSerialWorkerReadData(const QByteArray &data);
   // 连接状态更新
   void onConnectStatusChanged(int status);
+  // 恢复按钮操作
+  void ResetButtonEnable();
+  void SetButtonDisable();
 
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // ++++++++++++++++++++++++++ 交互类函数 ++++++++++++++++++++++++++++++++++
@@ -68,6 +71,8 @@ public slots:
   void sendDeviceControlSignal(int slaveID, int status);
   // 更新Table内容
   void onTableMapping();
+  // 复位超压欠压点火开阀测试项目
+  void onResetTestFlag();
 
 private slots:
 
@@ -77,5 +82,7 @@ private slots:
   void on_pushButton_6_clicked();
   void on_lineEdit_textChanged(const QString &arg1);
   void on_pushButton_clicked();
+  void on_pushButton_3_clicked();
+  void on_pushButton_2_clicked();
 };
 #endif // MAINWINDOW_H

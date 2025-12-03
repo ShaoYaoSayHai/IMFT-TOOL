@@ -29,8 +29,12 @@ public:
   int readAirPressureTime = 100;
   int readFaqianPressureTime = 100;
   int readFahouPressureTime = 100;
+  uint8_t a1Addr = 0, a2Addr = 0;
+  int readTimeout1 = 3000, readTimeout2 = 3000;
 
   GT_Modbus GT_ModbusHandler;
+
+  QTimer *pxTimerReadTimeout = nullptr;
 
 private:
 public slots:
@@ -38,6 +42,8 @@ public slots:
   void TestTaskInit();
 
   void TestTaskDeinit();
+
+  void TimerReadTimeoutCallback();
 
   // 控制所有电磁阀
   void onControlAllValveTool();
@@ -57,6 +63,12 @@ public slots:
   QByteArray GT_BuildDeviceFahouPressure(QByteArray address);
   // 清除加糖PCB的设备异常信息
   QByteArray GT_BuildDeviceErrorClear(QByteArray address);
+  // 清除所有设备异常信息
+  void GT_ResetDeviceErrorAll(QList<DeviceInfo> list);
+  // 全部加糖设备进入产测模式
+  void GT_EnterFactoryModeAll(QList<DeviceInfo> list);
+  // 全部加糖设备退出产测模式
+  void GT_ExitFactoryModeAll(QList<DeviceInfo> list);
 
   // 测试所有基础指令
   void onTestBaseCmdAll();
@@ -75,12 +87,21 @@ public slots:
   void CTL_SetDeviceSwitchOperate(QList<CLTDeviceInfo> data);
   // 依次关闭所有阀门
   void CTL_SetDeviceSwitchCloseAll(QList<CLTDeviceInfo> data);
+  // 启动的时候打开所有阀门
+  void CTL_DeviceSwitchOpenAll();
+  // 关闭所有阀门
+  void CTL_DeviceSwitchCloseAll();
   // 控制设备开关操作 打开所有的阀门
   void CTL_SetDeviceSwitchOpenAll(QList<CLTDeviceInfo> data);
   // 开启进气端阀门
-  void CTL_SetInputControlDeviceSwitchOpen(uint8_t address);
+  void CTL_SetInputControlDeviceSwitchOpen(QByteArray address);
   // 关闭进气端阀门
-  void CTL_SetInputControlDeviceSwitchClose(uint8_t address);
+  void CTL_SetInputControlDeviceSwitchClose(QByteArray address);
+
+  // ====================== 欠压流程执行 =================================
+  void DO_TaskCheckLowPressure(QList<DeviceInfo> data);
+  // ====================== 点火开阀流程执行 ==============================
+  void DO_TaskOpenFire(QList<DeviceInfo> data);
 signals:
 
   // 调用串口总线发送数据

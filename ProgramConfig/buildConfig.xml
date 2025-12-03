@@ -14,10 +14,10 @@
             <DeviceAddress>0xA3</DeviceAddress>
             <DeviceType>0x0001</DeviceType>
         </DeviceNode>
-        <DeviceNode>
+        <!-- <DeviceNode>
             <DeviceAddress>0xA4</DeviceAddress>
             <DeviceType>0x0001</DeviceType>
-        </DeviceNode>
+        </DeviceNode> -->
         <!-- <DeviceNode>
             <DeviceAddress>0xA5</DeviceAddress>
             <DeviceType>0x0001</DeviceType>
@@ -37,16 +37,17 @@
     </ParentDeviceNode>
     <!-- 父开关打开时间 -->
     <DeviceSwitchConfig>
-        <SwitchOpenTime>1500</SwitchOpenTime>
+        <SwitchOpenTime>1000</SwitchOpenTime>
         <SwitchCloseTime>1000</SwitchCloseTime>
-        <SwitchResetTime>200</SwitchResetTime>
+        <SwitchResetTime>500</SwitchResetTime>
     </DeviceSwitchConfig>
     <ReadPressureTimeConfig>
-        <ReadAirPressureTime>100</ReadAirPressureTime>
-        <ReadFaqianPressureTime>100</ReadFaqianPressureTime>
-        <ReadFahouPressureTime>100</ReadFahouPressureTime>
+        <ReadAirPressureTime>1500</ReadAirPressureTime>
+        <ReadFaqianPressureTime>1500</ReadFaqianPressureTime>
+        <ReadFahouPressureTime>1500</ReadFahouPressureTime>
+        <ReadLowPressureTimeout>3000</ReadLowPressureTimeout>
+        <ReadOverPressureTimeout>3000</ReadOverPressureTimeout>
     </ReadPressureTimeConfig>
-
     <InputControlSwitch>
         <InputControlSwitchA1>
             <SwitchAddress>0xB1</SwitchAddress>

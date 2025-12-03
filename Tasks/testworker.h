@@ -40,6 +40,10 @@ public slots:
     void onReadAllValveStatus(QList<DeviceInfo> deviceList);
     // 读取进气端相对压力
     void onReadAllBoardPressure(QList<DeviceInfo> deviceList);
+    // 欠压执行
+    void OMFT_LowPressureFunc( QList<DeviceInfo> deviceList );
+    // 点火开阀执行
+    void OMFT_OpenFireFunc( QList<DeviceInfo> deviceList );
 signals:
 
 };

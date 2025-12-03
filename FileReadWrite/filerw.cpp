@@ -237,13 +237,51 @@ bool readInputControlSwitch(const QString &filePath, uint8_t &a1Addr,
     return false;
   }
   QString a1Address = a1AddrEl.text().trimmed();
-//  a1Type = a1TypeEl.text().trimmed();
+  //  a1Type = a1TypeEl.text().trimmed();
   QString a2Address = a2AddrEl.text().trimmed();
-//  a2Type = a2TypeEl.text().trimmed();
+  //  a2Type = a2TypeEl.text().trimmed();
 
   a1Addr = a1Address.toUInt(nullptr, 16);
   //   uint8_t a1TypeVal = a1Type.toUInt(nullptr, 16);
   a2Addr = a2Address.toUInt(nullptr, 16);
   //   uint8_t a2TypeVal = a2Type.toUInt(nullptr, 16);
+  return true;
+}
+
+bool readPressureTimeoutConfig(const QString &filePath, int &readTimeout1,
+                               int &readTimeout2) {
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    qDebug() << "[错误] 无法打开文件:" << file.errorString();
+    return false;
+  }
+  QDomDocument doc;
+  QString errorMsg;
+  int errorLine = 0, errorColumn = 0;
+  if (!doc.setContent(&file, false, &errorMsg, &errorLine, &errorColumn)) {
+    qDebug() << "[错误] XML解析失败! 行:" << errorLine << "列:" << errorColumn
+             << "错误:" << errorMsg;
+    file.close();
+    return false;
+  }
+  file.close();
+  QDomElement root = doc.documentElement();
+  if (root.isNull()) {
+    qDebug() << "[错误] 未找到根元素（Root）。";
+    return false;
+  }
+  QDomElement timeConfig = root.firstChildElement("ReadPressureTimeConfig");
+  if (timeConfig.isNull()) {
+    qDebug() << "[错误] 未找到 ReadPressureTimeConfig 节点。";
+    return false;
+  }
+  QDomElement lowEl = timeConfig.firstChildElement("ReadLowPressureTimeout");
+  QDomElement overEl = timeConfig.firstChildElement("ReadOverPressureTimeout");
+  if (lowEl.isNull() || overEl.isNull()) {
+    qDebug() << "[错误] Timeout 节点不完整。";
+    return false;
+  }
+  readTimeout1 = lowEl.text().trimmed().toInt();
+  readTimeout2 = overEl.text().trimmed().toInt();
   return true;
 }

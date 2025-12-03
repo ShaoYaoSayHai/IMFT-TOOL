@@ -64,7 +64,7 @@ int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareStr
         }
         // 比较单元格文本与目标字符串
         if ((item->text().mid( (item->text().size()-2) , (item->text().size()))) == compareString) {
-            qDebug() << "找到匹配项，行号：" << row << "，内容：" << item->text();
+//            qDebug() << "找到匹配项，行号：" << row << "，内容：" << item->text();
             return row; // 返回匹配的行号
         }
     }

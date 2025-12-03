@@ -11,7 +11,12 @@ TestLoop::TestLoop(QObject *parent) : QObject(parent) {
 
 TestLoop::~TestLoop() {
   qDebug() << "==================== Test Loop begin ====================";
-
+  if (pxTimerReadTimeout) {
+    if (pxTimerReadTimeout->isActive()) {
+      pxTimerReadTimeout->stop();
+    }
+    pxTimerReadTimeout->deleteLater();
+  }
   qDebug() << "==================== Test Loop end ====================";
 }
 
@@ -31,16 +36,32 @@ void TestLoop::TestTaskInit() {
     qDebug() << "读取压力时间失败";
     return;
   }
-
-  uint8_t a1Addr = 0, a2Addr = 0;
   if (!readInputControlSwitch("./buildConfig.xml", a1Addr, a2Addr)) {
     qDebug() << "读取输入控制开关失败";
     return;
   }
   qDebug() << "a1Addr:" << a1Addr << "a2Addr:" << a2Addr;
+
+  if (!readPressureTimeoutConfig("./buildConfig.xml", readTimeout1,
+                                 readTimeout2)) {
+    qDebug() << "读取压力超时时间失败";
+    return;
+  }
+  qDebug() << "readTimeout1:" << readTimeout1
+           << "readTimeout2:" << readTimeout2;
+
+  pxTimerReadTimeout = new QTimer();
+
+  connect(pxTimerReadTimeout, &QTimer::timeout, this,
+          &TestLoop::TimerReadTimeoutCallback);
 }
 
 void TestLoop::TestTaskDeinit() {}
+
+void TestLoop::TimerReadTimeoutCallback() {
+  // 读取压力数据超时任务
+  emit readPressureComplete();
+}
 
 void TestLoop::onControlAllValveTool() {
   QByteArray qbyData;
@@ -178,6 +199,31 @@ QByteArray TestLoop::GT_BuildDeviceErrorClear(QByteArray address) {
   return ret;
 }
 
+void TestLoop::GT_ResetDeviceErrorAll(QList<DeviceInfo> list) {
+  // 先读取大气压
+  for (int i = 0; i < list.size(); i++) {
+    emit sendMethodToSerial(
+        GT_BuildDeviceErrorClear(list.at(i).slaveID)); // 发送大气压读取
+    QThread::msleep(100);
+  }
+}
+
+void TestLoop::GT_EnterFactoryModeAll(QList<DeviceInfo> list) {
+  for (int i = 0; i < list.size(); i++) {
+    emit sendMethodToSerial(
+        GT_BuildDeviceFactoryModeEnter(list.at(i).slaveID)); // 发送大气压读取
+    QThread::msleep(200);
+  }
+}
+
+void TestLoop::GT_ExitFactoryModeAll(QList<DeviceInfo> list) {
+  for (int i = 0; i < list.size(); i++) {
+    emit sendMethodToSerial(
+        GT_BuildDeviceFactoryModeExit(list.at(i).slaveID)); // 发送大气压读取
+    QThread::msleep(200);
+  }
+}
+
 void TestLoop::onTestBaseCmdAll() {
   QThread::msleep(1000);
   emit sendMethodToSerial(GT_BuildDeviceFactoryModeEnter("01"));
@@ -208,29 +254,29 @@ void TestLoop::GT_ReadListAllPressure(QList<DeviceInfo> list) {
   for (int i = 0; i < list.size(); i++) {
     emit sendMethodToSerial(
         GT_BuildDeviceAirPressure(list.at(i).slaveID)); // 发送大气压读取
-    QThread::msleep(100);
-    //    emit sendMethodToSerial(
-    //        GT_BuildDeviceFaqianPressure(list.at(i).slaveID)); // 阀前读取
-    //    QThread::msleep(100);
-    // emit sendMethodToSerial(
-    //     GT_BuildDeviceFahouPressure(list.at(i).slaveID)); // 阀后读取
-    // QThread::msleep(100);
+    QThread::msleep(readAirPressureTime);
   }
   // 然后读取阀前压力
   for (int i = 0; i < list.size(); i++) {
     emit sendMethodToSerial(
         GT_BuildDeviceFaqianPressure(list.at(i).slaveID)); // 阀前读取
-    QThread::msleep(100);
+    QThread::msleep(readFaqianPressureTime);
   }
-
-  QThread::msleep(1000);
-  emit readPressureComplete(); // 读取压力执行完毕
+  // 在此处执行一个定时器更合适
+  pxTimerReadTimeout->setSingleShot(true);
+  if (!pxTimerReadTimeout->isActive()) {
+    pxTimerReadTimeout->start(readTimeout1); // 设置5s超时
+  } else {
+    pxTimerReadTimeout->setSingleShot(true);
+    pxTimerReadTimeout->stop();
+    pxTimerReadTimeout->start(readTimeout1); // 设置5s超时
+  }
 }
 
 QByteArray TestLoop::CTL_BuildDeviceSwitchClose(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 10); //
+  int value = address.toInt(&ok, 16); //
   uint8_t buffer[1] = {0x00};
   ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, 0x2001, buffer, 1, NULL);
   return ret;
@@ -239,7 +285,8 @@ QByteArray TestLoop::CTL_BuildDeviceSwitchClose(QByteArray address) {
 QByteArray TestLoop::CTL_BuildDeviceSwitchOpen(QByteArray address) {
   bool ok = false;
   QByteArray ret;
-  int value = address.toInt(&ok, 10); //
+  int value = address.toInt(&ok, 16); //
+    qDebug() << "DEBUG +++ slaveID" << value;
   uint8_t buffer[1] = {0x01};
   ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, 0x2001, buffer, 1, NULL);
   return ret;
@@ -274,6 +321,25 @@ void TestLoop::CTL_SetDeviceSwitchCloseAll(QList<CLTDeviceInfo> data) {
   }
 }
 
+void TestLoop::CTL_DeviceSwitchOpenAll() {
+  // DeviceCLInfo
+  qDebug() << "地址" << DeviceCLInfo[0].address.toUtf8();
+  for (int i = 0; i < DeviceCLInfo.size(); i++) {
+    emit sendMethodToSerial(
+        CTL_BuildDeviceSwitchOpen(DeviceCLInfo[i].address.toUtf8()));
+    QThread::msleep(this->switchResetTime);
+  }
+}
+
+void TestLoop::CTL_DeviceSwitchCloseAll() {
+  // DeviceCLInfo
+  for (int i = 0; i < DeviceCLInfo.size(); i++) {
+    emit sendMethodToSerial(
+        CTL_BuildDeviceSwitchClose(DeviceCLInfo[i].address.toUtf8()));
+    QThread::msleep(this->switchResetTime);
+  }
+}
+
 /**
  * @brief 控制设备开关操作 打开所有的阀门
  * @param data
@@ -290,24 +356,58 @@ void TestLoop::CTL_SetDeviceSwitchOpenAll(QList<CLTDeviceInfo> data) {
  * @brief 控制输入控制设备开关操作 打开所有的阀门
  * @param address
  */
-void TestLoop::CTL_SetInputControlDeviceSwitchOpen(uint8_t address) {
-  QByteArray data;
-  data.append(address);
+void TestLoop::CTL_SetInputControlDeviceSwitchOpen(QByteArray address) {
+//  QByteArray data;
+//  data.append(address);
   emit sendMethodToSerial(
-      CTL_BuildDeviceSwitchOpen(data)); // 输入参数必须是QByteArray
+      CTL_BuildDeviceSwitchOpen(address)); // 输入参数必须是QByteArray
   QThread::msleep(this->switchResetTime);
 }
 
 /**
- * @brief 控制输入控制设备开关操作 打开所有的阀门
+ * @brief 控制输入控制设备开关操作 关闭所有的阀门
  * @param address
  */
-void TestLoop::CTL_SetInputControlDeviceSwitchClose(uint8_t address) {
+void TestLoop::CTL_SetInputControlDeviceSwitchClose(QByteArray address) {
   QByteArray data;
   data.append(address);
   emit sendMethodToSerial(
       CTL_BuildDeviceSwitchClose(data)); // 输入参数必须是QByteArray
   QThread::msleep(this->switchResetTime);
+}
+
+void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
+  // 进入产测模式
+  GT_EnterFactoryModeAll(data);
+  // 执行所有阀门打开
+  CTL_DeviceSwitchOpenAll();
+  // 执行所有压力读取
+  GT_ReadListAllPressure(data);
+  // 关闭所有阀门
+  CTL_DeviceSwitchCloseAll();
+  // 清除所有异常信息
+  //  GT_ResetDeviceErrorAll(data);
+  // 退出产测模式
+  GT_ExitFactoryModeAll(data);
+}
+
+void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
+  // 进气端B1,此时供气2KPa
+    qDebug()<<"A1 地址 - "<<a1Addr ;
+    QByteArray B1Addr = QByteArray::number( a1Addr , 16 );
+  CTL_SetInputControlDeviceSwitchOpen( B1Addr );
+  // 清除异常
+  // 暂时不写
+  QThread::msleep(3000); // 等待2s
+  // // 执行所有压力读取
+  // GT_ReadListAllPressure(data); // 读取所有压力
+  // 依次开启阀门并关闭
+  CTL_SetDeviceSwitchOperate(DeviceCLInfo);
+  QThread::msleep(1000); // 等待1s
+  // 读取所有阀门状态
+  GT_ReadDeviceSwitchStatusAll( data );
+  // 关闭进气端阀门
+  CTL_SetInputControlDeviceSwitchClose(B1Addr) ;
 }
 
 /**

@@ -80,6 +80,23 @@ void MainWindow::onConnectStatusChanged(int status) {
   }
 }
 
+void MainWindow::ResetButtonEnable()
+{
+    ui->pushButton->setEnabled(true) ;
+    ui->pushButton_2->setEnabled(true) ;
+    ui->pushButton_3->setEnabled(true) ;
+    ui->pushButton_4->setEnabled(true) ;
+}
+
+void MainWindow::SetButtonDisable()
+{
+    pxTimerReadSN->stop();
+    ui->pushButton->setDisabled(true) ;
+    ui->pushButton_2->setDisabled(true) ;
+    ui->pushButton_3->setDisabled(true) ;
+    ui->pushButton_4->setDisabled(true) ;
+}
+
 void MainWindow::ReleaseUiClasses() {}
 
 /**
@@ -123,44 +140,31 @@ void MainWindow::GUI_TableInit() {
    * @brief 连接 Modbus 信号槽，更新大气压值
    * 此处除了更新大气压之外还应该判定大气压范围，同时根据调用的测试模式来更新窗口和判断标准
    */
-  connect(
-      &(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
-      &GT_Modbus::sig_updateAirPressure, this,
-      [=](int slaveID, int location, int value) {
-        QByteArray recvSN = QString::number(slaveID).toUtf8();
-        qDebug() << "从机ID:" << slaveID << "位置:" << location
-                 << "大气压值:" << value << "size : " << GT_DeviceList.size();
-        for (DeviceInfo &device : GT_DeviceList) {
-          if (device.slaveID == recvSN) {
-            if (location == GT_Modbus::AIR) {
-              device.airPress = value;
-              device.airPressUpdateFlag = true;
-              qDebug() << "location:" << device.airPressUpdateFlag;
-            } else if (location == GT_Modbus::INF) {
-              device.infPress = value;
-              device.infPressUpdateFlag = true;
-              qDebug() << "location:" << device.infPressUpdateFlag;
-            } else if (location == GT_Modbus::END) {
-              device.endPress = value;
-              device.endPressUpdateFlag = true;
+  connect(&(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
+          &GT_Modbus::sig_updateAirPressure, this,
+          [=](int slaveID, int location, int value) {
+            QByteArray recvSN = QString::number(slaveID).toUtf8();
+//            qDebug() << "从机ID:" << slaveID << "位置:" << location
+//                     << "大气压值:" << value
+//                     << "size : " << GT_DeviceList.size();
+            for (DeviceInfo &device : GT_DeviceList) {
+              if (device.slaveID == recvSN) {
+                if (location == GT_Modbus::AIR) {
+                  device.airPress = value;
+                  device.airPressUpdateFlag = true;
+                  qDebug() << "location:" << device.airPressUpdateFlag;
+                } else if (location == GT_Modbus::INF) {
+                  device.infPress = value;
+                  device.infPressUpdateFlag = true;
+                  qDebug() << "location:" << device.infPressUpdateFlag;
+                } else if (location == GT_Modbus::END) {
+                  device.endPress = value;
+                  device.endPressUpdateFlag = true;
+                }
+              }
             }
-          }
-        }
-        // 当执行完循环之后，执行标志位判定，判定都是TRUE则执行数据的相减
-        for (DeviceInfo &device : GT_DeviceList) {
-          if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
-            uint32_t pressDiff = device.infPress - device.airPress;
-            qDebug() << "pressDiff:" << pressDiff;
-            pxTable->SetCellItem(
-                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1),
-                2, QString::number(pressDiff).toUtf8());
-            pxTable->SetCellColor(
-                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1),
-                2, TableControl::GREEN);
-            DeviceInfoReset(device);
-          }
-        }
-      });
+            onTableMapping();
+          });
 
   connect(&(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
           &GT_Modbus::sig_updateSN, this, [=](QByteArray data) {
@@ -193,6 +197,8 @@ void MainWindow::GUI_TableInit() {
               pxTable->SetCellColor(row, 4, TableControl::RED);
             }
           });
+    // 发送完毕执行复位操作
+    connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::readPressureComplete , this , &MainWindow::onResetTestFlag );
 }
 
 void MainWindow::onTimerTimeoutReadSN() {
@@ -281,8 +287,10 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1) {
  * @brief 欠压功能测试
  */
 void MainWindow::on_pushButton_clicked() {
-  DoTestFlag.QianYaTest = true;
-  pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
+    DoTestFlag.QianYaTest = true;
+//    pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
+    pxTestWorkerHandler->OMFT_LowPressureFunc( GT_DeviceList );
+    SetButtonDisable();
 }
 
 void MainWindow::onTableMapping() {
@@ -290,7 +298,7 @@ void MainWindow::onTableMapping() {
     // 当执行完循环之后，执行标志位判定，判定都是TRUE则执行数据的相减
     for (DeviceInfo &device : GT_DeviceList) {
       if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
-        uint32_t pressDiff = device.infPress - device.airPress;
+        int pressDiff = device.infPress - device.airPress;
         if (pressDiff < 800) {
           pxTable->SetCellItem(
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
@@ -313,25 +321,74 @@ void MainWindow::onTableMapping() {
   } else if (DoTestFlag.ChaoYaTest) {
     for (DeviceInfo &device : GT_DeviceList) {
       if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
-        uint32_t pressDiff = device.infPress - device.airPress;
+        int pressDiff = device.infPress - device.airPress;
         if (pressDiff > 6000) {
           pxTable->SetCellItem(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
               QString::number(pressDiff).toUtf8());
           pxTable->SetCellColor(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
               TableControl::GREEN);
           DeviceInfoReset(device);
         } else {
           pxTable->SetCellItem(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
               QString::number(pressDiff).toUtf8());
           pxTable->SetCellColor(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
               TableControl::RED);
           DeviceInfoReset(device);
         }
       }
     }
   }
+}
+
+void MainWindow::onResetTestFlag()
+{
+    // 超时之后，应该先判定该SN是否受到过数据，如果收到过则忽略，如果没有则ERROR
+    // 可以通过数据是否为0判断是否收到了数据
+    for (DeviceInfo &device : GT_DeviceList)
+    {
+        // 出现了未收到的情况，直接报ERROR
+        if( (device.airPress == 0 || device.infPress == 0) && DoTestFlag.ChaoYaTest != false )
+        {
+            pxTable->SetCellItem(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
+                "FAIL");
+            pxTable->SetCellColor(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
+                TableControl::RED);
+        }
+        // 欠压查询
+        if( (device.airPress == 0 || device.infPress == 0) && DoTestFlag.QianYaTest != false )
+        {
+            pxTable->SetCellItem(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+                "FAIL");
+            pxTable->SetCellColor(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
+                TableControl::RED);
+        }
+        // 销毁数据
+        device.airPress = 0;
+        device.infPress = 0;
+        device.endPress = 0;
+    }
+    ResetButtonEnable();
+    DoTestFlag.ChaoYaTest = false;
+    DoTestFlag.QianYaTest = false;
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    DoTestFlag.ChaoYaTest = true;
+    pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
+    // 按钮互斥
+    SetButtonDisable();
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    pxTestWorkerHandler->OMFT_OpenFireFunc(GT_DeviceList);
 }

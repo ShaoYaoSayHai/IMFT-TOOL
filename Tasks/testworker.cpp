@@ -126,4 +126,30 @@ void TestWorker::onReadAllBoardPressure(QList<DeviceInfo> deviceList) {
   }
 }
 
+void TestWorker::OMFT_LowPressureFunc(QList<DeviceInfo> deviceList)
+{
+    // DO_TaskCheckLowPressure// 为空返回
+    if (deviceList.isEmpty()) {
+      return;
+    }
+    if (pxTestLoop) {
+      QMetaObject::invokeMethod(pxTestLoop, "DO_TaskCheckLowPressure",
+                                Qt::QueuedConnection, // 使用队列连接确保线程安全
+                                Q_ARG(QList<DeviceInfo>, deviceList));
+    }
+}
+
+void TestWorker::OMFT_OpenFireFunc(QList<DeviceInfo> deviceList)
+{
+    // DO_TaskOpenFire
+    if (deviceList.isEmpty()) {
+      return;
+    }
+    if (pxTestLoop) {
+      QMetaObject::invokeMethod(pxTestLoop, "DO_TaskOpenFire",
+                                Qt::QueuedConnection, // 使用队列连接确保线程安全
+                                Q_ARG(QList<DeviceInfo>, deviceList));
+    }
+}
+
 

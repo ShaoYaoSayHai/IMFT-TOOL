@@ -31,7 +31,7 @@ QByteArray GT_Modbus::GT_ModbusWrite(uint8_t slaveAddr, uint8_t funcCode,
 }
 
 int GT_Modbus::GT_RetMsgVerify(QByteArray data) {
-  qDebug() << "进入VeriFy";
+//  qDebug() << "进入VeriFy";
   HexPrintf(data);
   // 是否是发出去的地址
   if ((uint8_t)(data.at(0)) != (this->slaveAddr)) {
@@ -95,9 +95,6 @@ int GT_Modbus::GT_RetMsgVerify(QByteArray data) {
 }
 
 void DeviceInfoReset(DeviceInfo &device) {
-  device.airPress = 0;
-  device.infPress = 0;
-  device.endPress = 0;
   device.airPressUpdateFlag = false;
   device.infPressUpdateFlag = false;
   device.endPressUpdateFlag = false;
