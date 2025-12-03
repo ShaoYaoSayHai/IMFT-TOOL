@@ -3,24 +3,33 @@
 
 #include <QObject>
 
+#include <QDebug>
 #include <QDomDocument>
 #include <QFile>
-#include <QDebug>
+#include <QTextStream>
 
 // 定义设备信息结构体
 struct CLTDeviceInfo {
-    QString address;
-    QString type;
+  QString address;
+  QString type;
 
-    // 可选：添加构造函数方便初始化
-    CLTDeviceInfo() = default;
-    CLTDeviceInfo(const QString& addr, const QString& t) : address(addr), type(t) {}
+  // 可选：添加构造函数方便初始化
+  CLTDeviceInfo() = default;
+  CLTDeviceInfo(const QString &addr, const QString &t)
+      : address(addr), type(t) {}
 };
 
 /**
  * @brief readXmlWithDOM
  * @param filePath
  */
-QList<CLTDeviceInfo> readXmlToStruct(QString filePath) ;
+QList<CLTDeviceInfo> readXmlToStruct(QString filePath);
+
+bool readSwitchTimesWithDebug(const QString &filePath, int &switchOpenTime,
+                              int &switchCloseTime, int &switchResetTime);
+
+bool readPressureTimeConfig(const QString &filePath, int &readAirPressureTime,
+                            int &readFaqianPressureTime,
+                            int &readFahouPressureTime);
 
 #endif // FILERW_H

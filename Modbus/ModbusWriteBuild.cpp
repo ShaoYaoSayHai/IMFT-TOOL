@@ -20,7 +20,7 @@ QByteArray BuildWriteGtDevice(uint8_t slaveId, uint16_t regAddr,
     ret.append((uint8_t)(regAddr & 0xFF));
     ret.append((uint8_t)len); // 写入数据长度
     for (int i = 0; i < len; i++) {
-        ret.append((uint8_t)(regVal[i] >> 8));
+//        ret.append((uint8_t)(regVal[i] >> 8));
         ret.append((uint8_t)(regVal[i] & 0xFF));
     }
     uint16_t crc = crc16_MODBUS(ret);

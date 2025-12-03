@@ -7,43 +7,78 @@
 
 #include <QWidget>
 
-#include <QTimer>
-#include "./Modbus/gt_modbus.h"
 #include "./FileReadWrite/filerw.h"
+#include "./Modbus/gt_modbus.h"
+#include <QTimer>
 
 class TestLoop : public QObject {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit TestLoop(QObject *parent = nullptr);
+  explicit TestLoop(QObject *parent = nullptr);
 
-    ~TestLoop();
+  ~TestLoop();
 
-    // 根据XML文件读取到的设备信息
-    QList<CLTDeviceInfo> DeviceCLInfo ;
+  // 根据XML文件读取到的设备信息
+  QList<CLTDeviceInfo> DeviceCLInfo;
+  // 阀门开启的保持时间
+  int switchOpenTime = 1500;
+  int switchCloseTime = 1000;
+  int switchResetTime = 200;
+
+  // 读取压力的时间间隔
+  int readAirPressureTime = 100;
+  int readFaqianPressureTime = 100;
+  int readFahouPressureTime = 100;
 
 private:
-
-    GT_Modbus GT_ModbusHandler ;
+  GT_Modbus GT_ModbusHandler;
 
 public slots:
 
-    void TestTaskInit();
+  void TestTaskInit();
 
-    void TestTaskDeinit();
+  void TestTaskDeinit();
 
-    // 控制所有电磁阀
-    void onControlAllValveTool();
-    // 批量执行
-    void onReadAllGTDevicePressure( QList<DeviceInfo> list );
-    // 执行单次的产测模式进入
-    QByteArray onSetGTDeviceInFactoryMode(QByteArray address ) ;
-    // 执行所有电磁阀关闭
-    QByteArray onSetCTLDeviceCloseVal( QByteArray address );
+  // 控制所有电磁阀
+  void onControlAllValveTool();
+  // 批量执行
+  void onReadAllGTDevicePressure(QList<DeviceInfo> list);
+  // 执行单次的产测模式进入
+  QByteArray GT_BuildDeviceFactoryModeEnter(QByteArray address);
+  // 产测模式退出
+  QByteArray GT_BuildDeviceFactoryModeExit(QByteArray address);
+  // 读取加糖PCB的限位开关 0x4033
+  QByteArray GT_BuildDeviceSwitch(QByteArray address);
+  // 读取加糖PCB的大气压值 4001
+  QByteArray GT_BuildDeviceAirPressure(QByteArray address);
+  // 读取加糖PCB的前端压力 4010
+  QByteArray GT_BuildDeviceFaqianPressure(QByteArray address);
+  // 读取加糖PCB的后端压力 4012
+  QByteArray GT_BuildDeviceFahouPressure(QByteArray address);
+  // 清除加糖PCB的设备异常信息
+  QByteArray GT_BuildDeviceErrorClear(QByteArray address);
 
+  // 测试所有基础指令
+  void onTestBaseCmdAll();
+  // 执行所有的压力读取
+  void GT_ReadListAllPressure(QList<DeviceInfo> list);
+
+  // ================================================================
+  // 执行所有电磁阀关闭
+  QByteArray CTL_BuildDeviceSwitchClose(QByteArray address);
+  // 打开控制阀-电磁阀
+  QByteArray CTL_BuildDeviceSwitchOpen(QByteArray address);
+
+  // ====================== 所有阀门开启关闭指令 ===========================
+  void CTL_SetDeviceSwitchOperate(QList<CLTDeviceInfo> data);
+  // 依次关闭所有阀门
+  void CTL_SetDeviceSwitchCloseAll(QList<CLTDeviceInfo> data);
 signals:
 
-    void sendMethodToSerial( const QByteArray &data );
+  void sendMethodToSerial(const QByteArray &data);
 
+  // 模拟点火开阀完成 执行下一步动作
+  void simulateIgnitionComplete();
 };
 
 #endif // TESTTASK_H

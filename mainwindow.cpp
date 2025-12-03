@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
   qRegisterMetaType<DeviceInfo>("DeviceInfo");
   // 注册 QList<DeviceInfo> 类型（这是解决你错误的核心）
   qRegisterMetaType<QList<DeviceInfo>>("QList<DeviceInfo>");
+  qRegisterMetaType<QList<CLTDeviceInfo>>("QList<CLTDeviceInfo>");
 
   SerialWorkerInit();
   // GUI Table
@@ -194,14 +195,16 @@ void MainWindow::on_pushButton_PortOpen_clicked() {
 void MainWindow::on_pushButton_PortRefresh_clicked() { RefreshSerialPorts(); }
 
 void MainWindow::on_pushButton_5_clicked() {
-  //    QByteArray qbyData = GT_ModbusHandler.GT_ModbusWrite( 0xAA , 0x03 ,
-  //    0xA0A0 , NULL , 0 , NULL ) ;
-//  QByteArray qbyData =
-//      GT_ModbusHandler.GT_ModbusWrite(0x0A, 0x03, 0x4012, NULL, 0, NULL);
-//  HexPrintf(qbyData);
-//  pxSerialWorkerUART_Handler->writeData(qbyData);
+//    QByteArray qbyData = GT_ModbusHandler.GT_ModbusWrite( 0xAA , 0x03 ,
+//    0xA0A0 , NULL , 0 , NULL ) ;
+//    QByteArray qbyData =
+//    GT_ModbusHandler.GT_ModbusWrite(0x0A, 0x03, 0x4012, NULL, 0, NULL);
+//    HexPrintf(qbyData);
+//    pxSerialWorkerUART_Handler->writeData(qbyData);
 
-    pxTestWorkerHandler->onTakeStep1Test( GT_DeviceList ) ;
+//    pxTestWorkerHandler->onTakeStep1Test( GT_DeviceList ) ;
+//    pxTestWorkerHandler->onTaskBaseCommondTest() ;
+    pxTestWorkerHandler->onSimulateIgnitionAction();
 }
 
 void MainWindow::on_pushButton_6_clicked() {

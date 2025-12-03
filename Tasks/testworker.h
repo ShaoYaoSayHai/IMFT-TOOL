@@ -31,6 +31,10 @@ public slots:
     void onThreadFinished();
 
     void onTakeStep1Test( QList<DeviceInfo> deviceList );
+    // 基础功能测试动作
+    void onTaskBaseCommondTest();
+    // 模拟点火开阀顺序动作
+    void onSimulateIgnitionAction();
 
 signals:
 
