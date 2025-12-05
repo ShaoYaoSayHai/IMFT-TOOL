@@ -112,6 +112,8 @@ signals:
   void simulateIgnitionComplete();
   // 读取压力完成
   void readPressureComplete();
+  // 发送日志
+  void logCurrentStep( QByteArray data );
 };
 
 #endif // TESTTASK_H

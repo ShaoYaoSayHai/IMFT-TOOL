@@ -41,6 +41,9 @@ signals:
   // 对外转发 BaseSerialPort 的信号
   void sig_connectStatus(int status);
   void sig_readData(const QByteArray &data);
+
+  // 发送内容日志化处理
+    void logSendMessage( QByteArray data );
 };
 
 #endif // SERIALWORKER_H

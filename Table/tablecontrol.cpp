@@ -42,8 +42,27 @@ void TableControl::SetCellItem(int row, int col, QByteArray qbyData)
     item->setText(qbyData) ;
 }
 
+void TableControl::ClearAllItems()
+{
+    int row = table->rowCount() ;
+    int col = table->columnCount() ;
+    qDebug()<<"row : " << row ;
+    qDebug()<<"col : " << col ;
+    for( int currentRow=0;currentRow<row;currentRow++ )
+    {
+        for( int currentCol=0;currentCol<col;currentCol++ )
+        {
+            item = table->item(( currentRow ) , currentCol ) ;
+            item->setText(" ") ;
+            item->setBackground( QColor(255,255,255) );
+        }
+    }
+}
+
+
 int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareString) {
     // 检查表格控件是否有效
+    int searchLine = compareString.toUInt() ;
     if (!tableWidget) {
         qDebug() << "错误：表格控件指针为空";
         return -1;
@@ -62,8 +81,16 @@ int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareStr
             qDebug() << "警告：第" << row << "行第0列的单元格为空，跳过检查";
             continue;
         }
+        qDebug()<<"查找内容 - "<<(item->text().mid( (item->text().size()-3) , (item->text().size()))) ;
         // 比较单元格文本与目标字符串
-        if ((item->text().mid( (item->text().size()-2) , (item->text().size()))) == compareString) {
+        QString currentLine = (item->text().mid( (item->text().size()-3) , (item->text().size()))) ;
+        int lineValue = currentLine.toUInt() ;
+        qDebug()<<"转换后的SLAVEID - "<<lineValue <<"待查找的ID"<<searchLine ;
+        if( searchLine == lineValue )
+        {
+            return row; // 返回匹配的行号
+        }
+        if ((item->text().mid( (item->text().size()-3) , (item->text().size()))).contains(compareString)) {
 //            qDebug() << "找到匹配项，行号：" << row << "，内容：" << item->text();
             return row; // 返回匹配的行号
         }

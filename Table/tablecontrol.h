@@ -35,6 +35,7 @@ public slots:
 
   void SetCellItem(int row, int col, QByteArray qbyData);
 
+  void ClearAllItems();
 signals:
 };
 

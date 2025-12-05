@@ -95,6 +95,9 @@ signals:
   void sig_updateAirPressure(int sn, int location, int value);
   // 更新阀门状态
   void sig_updateValveStatus(int sn, int value);
+
+  // 返回接收信息
+  void GT_ReadInfo( QByteArray data );
 };
 
 #endif // GT_MODBUS_H

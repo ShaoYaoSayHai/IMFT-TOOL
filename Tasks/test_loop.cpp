@@ -213,6 +213,8 @@ void TestLoop::GT_EnterFactoryModeAll(QList<DeviceInfo> list) {
     emit sendMethodToSerial(
         GT_BuildDeviceFactoryModeEnter(list.at(i).slaveID)); // 发送大气压读取
     QThread::msleep(200);
+
+    emit logCurrentStep( ( list.at(i).SN + "进入产测模式" ) ) ;
   }
 }
 
@@ -221,6 +223,8 @@ void TestLoop::GT_ExitFactoryModeAll(QList<DeviceInfo> list) {
     emit sendMethodToSerial(
         GT_BuildDeviceFactoryModeExit(list.at(i).slaveID)); // 发送大气压读取
     QThread::msleep(200);
+
+    emit logCurrentStep( ( list.at(i).SN + "退出产测模式" ) ) ;
   }
 }
 
@@ -305,6 +309,8 @@ void TestLoop::CTL_SetDeviceSwitchOperate(QList<CLTDeviceInfo> data) {
     emit sendMethodToSerial(
         CTL_BuildDeviceSwitchClose(data[i].address.toUtf8()));
     QThread::msleep(this->switchCloseTime);
+
+    emit logCurrentStep("控制阀" + data[i].address.toUtf8() + "已经动作完毕");
   }
   // 模拟点火开阀执行完成
 }
@@ -328,6 +334,8 @@ void TestLoop::CTL_DeviceSwitchOpenAll() {
     emit sendMethodToSerial(
         CTL_BuildDeviceSwitchOpen(DeviceCLInfo[i].address.toUtf8()));
     QThread::msleep(this->switchResetTime);
+
+    emit logCurrentStep( ( DeviceCLInfo.at(i).address.toUtf8() + "开启指令已经发送" ) ) ;
   }
 }
 
@@ -337,6 +345,8 @@ void TestLoop::CTL_DeviceSwitchCloseAll() {
     emit sendMethodToSerial(
         CTL_BuildDeviceSwitchClose(DeviceCLInfo[i].address.toUtf8()));
     QThread::msleep(this->switchResetTime);
+
+    emit logCurrentStep( ( DeviceCLInfo.at(i).address.toUtf8() + "关闭指令已经发送" ) ) ;
   }
 }
 
@@ -378,54 +388,87 @@ void TestLoop::CTL_SetInputControlDeviceSwitchClose(QByteArray address) {
 
 void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
   // 进入产测模式
+  emit logCurrentStep("========================= 欠压功能测试 BEGIN =========================") ;
+  emit logCurrentStep("进入产测模式");
   GT_EnterFactoryModeAll(data);
+  emit logCurrentStep("即将开启所有控制阀") ;
   // 执行所有阀门打开
   CTL_DeviceSwitchOpenAll();
+  emit logCurrentStep("读取所有阀前压力") ;
   // 执行所有压力读取
   GT_ReadListAllPressure(data);
   // 关闭所有阀门
+  emit logCurrentStep("关闭所有阀门") ;
   CTL_DeviceSwitchCloseAll();
   // 清除所有异常信息
   //  GT_ResetDeviceErrorAll(data);
   // 退出产测模式
+  emit logCurrentStep("退出产测模式") ;
   GT_ExitFactoryModeAll(data);
+  emit logCurrentStep("========================= 欠压功能测试 END =========================") ;
 }
 
 void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
   // 进气端B1,此时供气2KPa
     qDebug()<<"A1 地址 - "<<a1Addr ;
     QByteArray B1Addr = QByteArray::number( a1Addr , 16 );
+  emit logCurrentStep("========================= 点火开阀测试 BEGIN =========================") ;
+  emit logCurrentStep("打开控制阀 "+B1Addr);
   CTL_SetInputControlDeviceSwitchOpen( B1Addr );
   // 清除异常
   // 暂时不写
-  QThread::msleep(3000); // 等待2s
+  emit logCurrentStep("等待压力稳定 3");
+  QThread::msleep(1000); // 等待2s
+  emit logCurrentStep("等待压力稳定 2");
+  QThread::msleep(1000); // 等待2s
+  emit logCurrentStep("等待压力稳定 1");
+  QThread::msleep(1000); // 等待2s
   // // 执行所有压力读取
   // GT_ReadListAllPressure(data); // 读取所有压力
   // 依次开启阀门并关闭
+  emit logCurrentStep("依次开启控制阀");
   CTL_SetDeviceSwitchOperate(DeviceCLInfo);
   QThread::msleep(1000); // 等待1s
   // 读取所有阀门状态
+  emit logCurrentStep("读取阀门开启状态");
   GT_ReadDeviceSwitchStatusAll( data );
   QThread::msleep(1000); // 等待1s
   // 关闭进气端阀门
+  emit logCurrentStep("关闭进气端阀门") ;
   CTL_SetInputControlDeviceSwitchClose(B1Addr) ;
+  emit logCurrentStep("========================= 点火开阀测试 END =========================") ;
 }
 
 void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data)
 {
+    emit logCurrentStep("========================= 超压功能测试 BEGIN =========================") ;
     // 进入产测模式
+    emit logCurrentStep("进入产测模式");
     GT_EnterFactoryModeAll(data);
+    emit logCurrentStep("关闭所有阀门") ;
+    CTL_DeviceSwitchCloseAll();
 
     QByteArray Addr = QByteArray::number( a2Addr , 16 );
+    emit logCurrentStep("开启高压进气端阀门" + Addr);
     CTL_SetInputControlDeviceSwitchOpen( Addr );
 
-    QThread::msleep(3000); // 等待2s
+    emit logCurrentStep("等待压力稳定 3");
+    QThread::msleep(1000); // 等待2s
+    emit logCurrentStep("等待压力稳定 2");
+    QThread::msleep(1000); // 等待2s
+    emit logCurrentStep("等待压力稳定 1");
+    QThread::msleep(1000); // 等待2s
+
     // // 执行所有压力读取
+    emit logCurrentStep("读取所有压力数据");
     GT_ReadListAllPressure(data); // 读取所有压力
     // 关闭进气端阀门
+    emit logCurrentStep("关闭进气端阀门" + Addr);
     CTL_SetInputControlDeviceSwitchClose(Addr) ;
     // 退出产测模式
+    emit logCurrentStep("退出产测模式");
     GT_ExitFactoryModeAll(data);
+    emit logCurrentStep("========================= 超压功能测试 END =========================") ;
 }
 
 /**
@@ -436,5 +479,7 @@ void TestLoop::GT_ReadDeviceSwitchStatusAll(QList<DeviceInfo> data) {
   for (int i = 0; i < data.size(); i++) {
     emit sendMethodToSerial(GT_BuildDeviceSwitch(data[i].slaveID));
     QThread::msleep(this->switchResetTime);
+
+    emit logCurrentStep("待检品"+ data[i].SN + "读取状态");
   }
 }

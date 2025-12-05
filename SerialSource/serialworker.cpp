@@ -113,6 +113,8 @@ void SerialWorker::writeData(const QByteArray &data)
             return;
         m_serial->SerialPortWrite(const_cast<char*>(copy.data()), copy.size());
     }, Qt::QueuedConnection);
+    // 发送到日志
+    emit logSendMessage( "WR : "+ copy.toHex() );
 }
 
 void SerialWorker::onThreadStarted()
