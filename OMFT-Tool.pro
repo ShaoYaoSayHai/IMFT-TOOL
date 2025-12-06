@@ -20,6 +20,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     FileReadWrite/filerw.cpp \
+    HttpClient/deviceinfo.cpp \
+    HttpClient/httpclient.cpp \
+    HttpClient/infoparse.cpp \
     Logs/logs.cpp \
     Modbus/ModbusReMapping.cpp \
     Modbus/ModbusWriteBuild.cpp \
@@ -35,6 +38,9 @@ SOURCES += \
 
 HEADERS += \
     FileReadWrite/filerw.h \
+    HttpClient/deviceinfo.h \
+    HttpClient/httpclient.h \
+    HttpClient/infoparse.h \
     Logs/logs.h \
     Modbus/ModbusReMapping.h \
     Modbus/ModbusWriteBuild.h \

@@ -10,6 +10,7 @@
 #include "./FileReadWrite/filerw.h"
 #include "./Modbus/gt_modbus.h"
 #include <QTimer>
+#include "./HttpClient/infoparse.h"
 
 class TestLoop : public QObject {
   Q_OBJECT
@@ -104,6 +105,9 @@ public slots:
   void DO_TaskOpenFire(QList<DeviceInfo> data);
   // ====================== 超压测试流程 =================================
   void DO_TaskOverPressure( QList<DeviceInfo> data );
+  // ====================== 提交数据到服务器流程 ===========================
+  void DO_SubmitInfoToMES( QList<DeviceInfo> data );
+
 signals:
 
   // 调用串口总线发送数据

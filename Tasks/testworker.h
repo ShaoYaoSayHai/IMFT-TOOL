@@ -46,6 +46,8 @@ public slots:
     void OMFT_OpenFireFunc( QList<DeviceInfo> deviceList );
     // 超压测试
     void OMFT_OverPressureFunc( QList<DeviceInfo> deviceList );
+    // 提交到服务器
+    void OMFT_SubmitTestResultToMES( QList<DeviceInfo> deviceList );
 signals:
 
 };

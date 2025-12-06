@@ -165,4 +165,17 @@ void TestWorker::OMFT_OverPressureFunc(QList<DeviceInfo> deviceList)
     }
 }
 
+void TestWorker::OMFT_SubmitTestResultToMES(QList<DeviceInfo> deviceList)
+{
+    // DO_SubmitInfoToMES
+    if (deviceList.isEmpty()) {
+      return;
+    }
+    if (pxTestLoop) {
+      QMetaObject::invokeMethod(pxTestLoop, "DO_SubmitInfoToMES",
+                                Qt::QueuedConnection, // 使用队列连接确保线程安全
+                                Q_ARG(QList<DeviceInfo>, deviceList));
+    }
+}
+
 

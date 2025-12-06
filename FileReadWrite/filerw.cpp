@@ -42,7 +42,7 @@ QList<CLTDeviceInfo> readXmlToStruct(QString filePath) {
 
   // 获取所有DeviceNode节点
   QDomNodeList deviceNodes = parentElement.elementsByTagName("DeviceNode");
-  qDebug() << "找到设备节点数量:" << deviceNodes.count();
+//  qDebug() << "找到设备节点数量:" << deviceNodes.count();
 
   // 遍历所有设备节点
   for (int i = 0; i < deviceNodes.count(); ++i) {
@@ -64,14 +64,14 @@ QList<CLTDeviceInfo> readXmlToStruct(QString filePath) {
       // 使用聚合初始化创建结构体实例并添加到列表
       devices.append({deviceAddress, deviceType});
 
-      qDebug() << "成功读取设备 - 地址:" << deviceAddress
-               << "类型:" << deviceType;
+//      qDebug() << "成功读取设备 - 地址:" << deviceAddress
+//               << "类型:" << deviceType;
     } else {
       qDebug() << "设备节点" << i + 1 << "缺少地址或类型信息";
     }
   }
 
-  qDebug() << "总共读取了" << devices.size() << "个设备的信息";
+//  qDebug() << "总共读取了" << devices.size() << "个设备的信息";
   return devices;
 }
 
@@ -285,3 +285,49 @@ bool readPressureTimeoutConfig(const QString &filePath, int &readTimeout1,
   readTimeout2 = overEl.text().trimmed().toInt();
   return true;
 }
+
+
+/**
+ * @brief readInternetMesConfigInfo 读取配置信息
+ * @param filePath 路径
+ * @param part 目标内容
+ * @return
+ */
+QString readInternetMesConfigInfo(const QString &filePath , QString part )
+{
+    QString ipAddress = "" ;
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+      qDebug() << "[错误] 无法打开文件:" << file.errorString();
+      return nullptr ;
+    }
+    QDomDocument doc;
+    QString errorMsg;
+    int errorLine = 0, errorColumn = 0;
+    if (!doc.setContent(&file, false, &errorMsg, &errorLine, &errorColumn)) {
+      qDebug() << "[错误] XML解析失败! 行:" << errorLine << "列:" << errorColumn
+               << "错误:" << errorMsg;
+      file.close();
+      return nullptr;
+    }
+    file.close();
+    QDomElement root = doc.documentElement();
+    if (root.isNull()) {
+      qDebug() << "[错误] 未找到根元素（Root）。";
+      return nullptr;
+    }
+
+    QDomElement timeConfig = root.firstChildElement("MesConfig");
+    if (timeConfig.isNull()) {
+      qDebug() << "[错误] 未找到 MesConfig 节点。";
+      return "";
+    }
+
+    QDomElement info = timeConfig.firstChildElement(part);
+    if (info.isNull()) {
+      qDebug() << "[错误] Timeout 节点不完整。";
+      return "";
+    }
+    return info.text() ;
+}
+

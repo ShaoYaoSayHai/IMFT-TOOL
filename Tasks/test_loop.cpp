@@ -21,7 +21,7 @@ TestLoop::~TestLoop() {
 }
 
 void TestLoop::TestTaskInit() {
-  qDebug() << "============ buildConfig Init ===============";
+  qDebug() << "==================== buildConfig Init ====================";
   // 上电初始控制阀 读取配置文件
   DeviceCLInfo = readXmlToStruct("./buildConfig.xml");
 
@@ -40,15 +40,13 @@ void TestLoop::TestTaskInit() {
     qDebug() << "读取输入控制开关失败";
     return;
   }
-  qDebug() << "a1Addr:" << a1Addr << "a2Addr:" << a2Addr;
+//  qDebug() << "a1Addr:" << a1Addr << "a2Addr:" << a2Addr;
 
   if (!readPressureTimeoutConfig("./buildConfig.xml", readTimeout1,
                                  readTimeout2)) {
     qDebug() << "读取压力超时时间失败";
     return;
   }
-  qDebug() << "readTimeout1:" << readTimeout1
-           << "readTimeout2:" << readTimeout2;
 
   pxTimerReadTimeout = new QTimer();
 
@@ -410,7 +408,7 @@ void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
 
 void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
   // 进气端B1,此时供气2KPa
-    qDebug()<<"A1 地址 - "<<a1Addr ;
+//    qDebug()<<"A1 地址 - "<<a1Addr ;
     QByteArray B1Addr = QByteArray::number( a1Addr , 16 );
   emit logCurrentStep("========================= 点火开阀测试 BEGIN =========================") ;
   emit logCurrentStep("打开控制阀 "+B1Addr);
@@ -469,6 +467,16 @@ void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data)
     emit logCurrentStep("退出产测模式");
     GT_ExitFactoryModeAll(data);
     emit logCurrentStep("========================= 超压功能测试 END =========================") ;
+}
+
+void TestLoop::DO_SubmitInfoToMES(QList<DeviceInfo> data)
+{
+    for( DeviceInfo &device : data )
+    {
+        QString sn = device.SN ;
+        QString info = InfoParser::generateXmlString( sn , "OMFT") ;
+        qDebug()<<info ;
+    }
 }
 
 /**

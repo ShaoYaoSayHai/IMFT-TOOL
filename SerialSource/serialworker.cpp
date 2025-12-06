@@ -13,9 +13,9 @@ SerialWorker::SerialWorker(QObject *parent) : QObject(parent)
 
 SerialWorker::~SerialWorker()
 {
-    qDebug()<<"SerialWorker delete start" ;
+//    qDebug()<<"SerialWorker delete start" ;
     this->stopWorker() ;
-    qDebug()<<"SerialWorker delete success" ;
+//    qDebug()<<"SerialWorker delete success" ;
 }
 
 bool SerialWorker::getCurrentSerialPortStatus()

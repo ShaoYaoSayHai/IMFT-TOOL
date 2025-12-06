@@ -38,4 +38,12 @@ bool readInputControlSwitch(const QString &filePath, uint8_t &a1Addr,
 bool readPressureTimeoutConfig(const QString &filePath, int &readTimeout1,
                                int &readTimeout2);
 
+/**
+ * @brief readInternetMesConfigInfo 读取配置信息
+ * @param filePath 路径
+ * @param part 目标内容
+ * @return
+ */
+QString readInternetMesConfigInfo(const QString &filePath , QString part ) ;
+
 #endif // FILERW_H

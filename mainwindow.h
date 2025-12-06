@@ -14,6 +14,8 @@
 #include "./Table/tablecontrol.h"
 #include "./Tasks/testworker.h"
 #include "./hexprintf.h"
+#include "./HttpClient/httpclient.h"
+#include "./HttpClient/infoparse.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -44,6 +46,8 @@ private:
   TestWorker *pxTestWorkerHandler = new TestWorker(this);
   // 超压欠压执行标志位
   DoTestType DoTestFlag = {false, false};
+  // HTTP客户端操作
+  HttpClient *pxHttpClient = new HttpClient( this );
 
 public slots:
 
@@ -84,5 +88,6 @@ private slots:
   void on_pushButton_clicked();
   void on_pushButton_3_clicked();
   void on_pushButton_2_clicked();
+  void on_pushButton_4_clicked();
 };
 #endif // MAINWINDOW_H

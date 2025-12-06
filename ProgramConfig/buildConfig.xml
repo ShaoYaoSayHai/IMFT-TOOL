@@ -7,7 +7,7 @@
             <DeviceType>0x0001</DeviceType>
         </DeviceNode>
         <DeviceNode>
-            <DeviceAddress>0xA2</DeviceAddress>
+            <DeviceAddress>0xC1</DeviceAddress>
             <DeviceType>0x0001</DeviceType>
         </DeviceNode>
         <DeviceNode>
@@ -58,4 +58,12 @@
             <SwitchType>0x0001</SwitchType>
         </InputControlSwitchA2>
     </InputControlSwitch>
+    <!-- 连接到MES系统信息 -->
+    <MesConfig>
+        <MesIp>http://192.168.30.133</MesIp>
+        <MesPort>6688</MesPort>
+        <MesEnable>1</MesEnable>
+        <MesPathUpdate>/WebService1.asmx/MesUpdate</MesPathUpdate>
+        <MesPathCheck>/WebService1.asmx/MesCheck</MesPathCheck>
+    </MesConfig>
 </Root>

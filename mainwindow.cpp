@@ -24,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent)
   SerialWorkerInit();
   // GUI Table
   GUI_TableInit();
+
+  // HTTP 客户端测试
+//  pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251120_10006\" STA=\"OMFT\"/></root>" );
 }
 
 MainWindow::~MainWindow() {
@@ -268,11 +271,6 @@ void MainWindow::on_pushButton_PortRefresh_clicked() { RefreshSerialPorts(); }
 
 void MainWindow::on_pushButton_5_clicked() {
   pxTimerReadSN->stop();
-  // pxTestWorkerHandler->onTakeStep1Test(GT_DeviceList);
-//  pxTestWorkerHandler->onReadAllValveStatus(GT_DeviceList);
-  //    pxTestWorkerHandler->onTaskBaseCommondTest() ;
-  // pxTestWorkerHandler->onSimulateIgnitionAction();
-
   pxBrowserLogs->LogBrowserClear() ;
     pxTable->ClearAllItems();
     GT_DeviceList.clear();
@@ -404,4 +402,16 @@ void MainWindow::on_pushButton_3_clicked()
 void MainWindow::on_pushButton_2_clicked()
 {
     pxTestWorkerHandler->OMFT_OpenFireFunc(GT_DeviceList);
+}
+
+/**
+ * @brief 数据提交到服务器
+ */
+void MainWindow::on_pushButton_4_clicked()
+{
+//    QString info = InfoParser::generateXmlString("CE02_251120_10006" , "OMFT") ;
+//    pxHttpClient->postMesCheck( info ) ;
+
+//    OMFT_SubmitTestResultToMES();
+    pxTestWorkerHandler->OMFT_SubmitTestResultToMES(GT_DeviceList) ;
 }
