@@ -7,7 +7,7 @@
             <DeviceType>0x0001</DeviceType>
         </DeviceNode>
         <DeviceNode>
-            <DeviceAddress>0xC1</DeviceAddress>
+            <DeviceAddress>0xA2</DeviceAddress>
             <DeviceType>0x0001</DeviceType>
         </DeviceNode>
         <DeviceNode>
@@ -66,4 +66,18 @@
         <MesPathUpdate>/WebService1.asmx/MesUpdate</MesPathUpdate>
         <MesPathCheck>/WebService1.asmx/MesCheck</MesPathCheck>
     </MesConfig>
+    <LowPressureDetectionConfig>
+        <!-- 欠压的数据标准 -->
+        <LowPressureThreshold>800</LowPressureThreshold>
+        <LowPressureTestCommond>
+            <write_len>256</write_len>
+            <enable>true</enable>
+            <write_buffer size="256">
+            {
+                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+            }
+            </write_buffer>
+        </LowPressureTestCommond>
+    </LowPressureDetectionConfig>
 </Root>

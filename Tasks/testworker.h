@@ -48,6 +48,8 @@ public slots:
     void OMFT_OverPressureFunc( QList<DeviceInfo> deviceList );
     // 提交到服务器
     void OMFT_SubmitTestResultToMES( QList<DeviceInfo> deviceList );
+    // 初始化测试队列
+    void OMFT_ControlTaskInit(  );
 signals:
 
 };

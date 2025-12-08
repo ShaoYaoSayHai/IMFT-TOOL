@@ -20,6 +20,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     FileReadWrite/filerw.cpp \
+    FileReadWrite/xmlcommandparser.cpp \
     HttpClient/deviceinfo.cpp \
     HttpClient/httpclient.cpp \
     HttpClient/infoparse.cpp \
@@ -38,6 +39,7 @@ SOURCES += \
 
 HEADERS += \
     FileReadWrite/filerw.h \
+    FileReadWrite/xmlcommandparser.h \
     HttpClient/deviceinfo.h \
     HttpClient/httpclient.h \
     HttpClient/infoparse.h \

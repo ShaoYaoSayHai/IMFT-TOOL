@@ -415,3 +415,8 @@ void MainWindow::on_pushButton_4_clicked()
 //    OMFT_SubmitTestResultToMES();
     pxTestWorkerHandler->OMFT_SubmitTestResultToMES(GT_DeviceList) ;
 }
+
+void MainWindow::on_pushButton_7_clicked()
+{
+    pxTestWorkerHandler->OMFT_ControlTaskInit() ;
+}

@@ -8,9 +8,9 @@
 #include <QWidget>
 
 #include "./FileReadWrite/filerw.h"
+#include "./HttpClient/infoparse.h"
 #include "./Modbus/gt_modbus.h"
 #include <QTimer>
-#include "./HttpClient/infoparse.h"
 
 class TestLoop : public QObject {
   Q_OBJECT
@@ -37,6 +37,9 @@ public:
 
   QTimer *pxTimerReadTimeout = nullptr;
 
+  // 桀桀桀 动态的函数 没见过吧
+  QList<CommandParams> commandList;
+
 private:
 public slots:
 
@@ -45,6 +48,9 @@ public slots:
   void TestTaskDeinit();
 
   void TimerReadTimeoutCallback();
+
+  // 初始化操作队列
+  void ControlTaskListInit();
 
   // 控制所有电磁阀
   void onControlAllValveTool();
@@ -99,14 +105,21 @@ public slots:
   // 关闭进气端阀门
   void CTL_SetInputControlDeviceSwitchClose(QByteArray address);
 
+  // 优化后代码
+  // ===================================================================
+  // ====================== 打开2KPa阀门 ================================
+  void LST_CommandOpenInputSwitch();
+  // ====================== 轮询打开所有阀门 =============================
+  void LST_CommandPollingOpenAllSwitch(void);
+
   // ====================== 欠压流程执行 =================================
   void DO_TaskCheckLowPressure(QList<DeviceInfo> data);
   // ====================== 点火开阀流程执行 ==============================
   void DO_TaskOpenFire(QList<DeviceInfo> data);
   // ====================== 超压测试流程 =================================
-  void DO_TaskOverPressure( QList<DeviceInfo> data );
+  void DO_TaskOverPressure(QList<DeviceInfo> data);
   // ====================== 提交数据到服务器流程 ===========================
-  void DO_SubmitInfoToMES( QList<DeviceInfo> data );
+  void DO_SubmitInfoToMES(QList<DeviceInfo> data);
 
 signals:
 
@@ -117,7 +130,7 @@ signals:
   // 读取压力完成
   void readPressureComplete();
   // 发送日志
-  void logCurrentStep( QByteArray data );
+  void logCurrentStep(QByteArray data);
 };
 
 #endif // TESTTASK_H

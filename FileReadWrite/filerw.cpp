@@ -42,7 +42,7 @@ QList<CLTDeviceInfo> readXmlToStruct(QString filePath) {
 
   // 获取所有DeviceNode节点
   QDomNodeList deviceNodes = parentElement.elementsByTagName("DeviceNode");
-//  qDebug() << "找到设备节点数量:" << deviceNodes.count();
+  //  qDebug() << "找到设备节点数量:" << deviceNodes.count();
 
   // 遍历所有设备节点
   for (int i = 0; i < deviceNodes.count(); ++i) {
@@ -64,14 +64,14 @@ QList<CLTDeviceInfo> readXmlToStruct(QString filePath) {
       // 使用聚合初始化创建结构体实例并添加到列表
       devices.append({deviceAddress, deviceType});
 
-//      qDebug() << "成功读取设备 - 地址:" << deviceAddress
-//               << "类型:" << deviceType;
+      //      qDebug() << "成功读取设备 - 地址:" << deviceAddress
+      //               << "类型:" << deviceType;
     } else {
       qDebug() << "设备节点" << i + 1 << "缺少地址或类型信息";
     }
   }
 
-//  qDebug() << "总共读取了" << devices.size() << "个设备的信息";
+  //  qDebug() << "总共读取了" << devices.size() << "个设备的信息";
   return devices;
 }
 
@@ -286,48 +286,291 @@ bool readPressureTimeoutConfig(const QString &filePath, int &readTimeout1,
   return true;
 }
 
-
 /**
  * @brief readInternetMesConfigInfo 读取配置信息
  * @param filePath 路径
  * @param part 目标内容
  * @return
  */
-QString readInternetMesConfigInfo(const QString &filePath , QString part )
+QString readInternetMesConfigInfo(const QString &filePath, QString part) {
+  QString ipAddress = "";
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    qDebug() << "[错误] 无法打开文件:" << file.errorString();
+    return nullptr;
+  }
+  QDomDocument doc;
+  QString errorMsg;
+  int errorLine = 0, errorColumn = 0;
+  if (!doc.setContent(&file, false, &errorMsg, &errorLine, &errorColumn)) {
+    qDebug() << "[错误] XML解析失败! 行:" << errorLine << "列:" << errorColumn
+             << "错误:" << errorMsg;
+    file.close();
+    return nullptr;
+  }
+  file.close();
+  QDomElement root = doc.documentElement();
+  if (root.isNull()) {
+    qDebug() << "[错误] 未找到根元素（Root）。";
+    return nullptr;
+  }
+
+  QDomElement timeConfig = root.firstChildElement("MesConfig");
+  if (timeConfig.isNull()) {
+    qDebug() << "[错误] 未找到 MesConfig 节点。";
+    return "";
+  }
+
+  QDomElement info = timeConfig.firstChildElement(part);
+  if (info.isNull()) {
+    qDebug() << "[错误] Timeout 节点不完整。";
+    return "";
+  }
+  return info.text();
+}
+
+bool FileTakeRootElement(const QString& path, QDomElement& rootElement, QString& errorMsg, int* errorLine, int* errorColumn)
 {
-    QString ipAddress = "" ;
-    QFile file(filePath);
+    QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-      qDebug() << "[错误] 无法打开文件:" << file.errorString();
-      return nullptr ;
+        errorMsg = QString("无法打开文件: %1").arg(file.errorString());
+        return false;
     }
     QDomDocument doc;
-    QString errorMsg;
-    int errorLine = 0, errorColumn = 0;
-    if (!doc.setContent(&file, false, &errorMsg, &errorLine, &errorColumn)) {
-      qDebug() << "[错误] XML解析失败! 行:" << errorLine << "列:" << errorColumn
-               << "错误:" << errorMsg;
-      file.close();
-      return nullptr;
+    if (!doc.setContent(&file, false, &errorMsg, errorLine, errorColumn)) {
+        file.close();
+        return false;
     }
     file.close();
-    QDomElement root = doc.documentElement();
-    if (root.isNull()) {
-      qDebug() << "[错误] 未找到根元素（Root）。";
-      return nullptr;
+
+    rootElement = doc.documentElement();
+    if (rootElement.isNull()) {
+        errorMsg = "未找到根元素（Root）。";
+        return false;
     }
 
-    QDomElement timeConfig = root.firstChildElement("MesConfig");
-    if (timeConfig.isNull()) {
-      qDebug() << "[错误] 未找到 MesConfig 节点。";
-      return "";
-    }
-
-    QDomElement info = timeConfig.firstChildElement(part);
-    if (info.isNull()) {
-      qDebug() << "[错误] Timeout 节点不完整。";
-      return "";
-    }
-    return info.text() ;
+    // 关键：让doc离开作用域，但rootElement仍然有效
+    // 因为rootElement现在引用的是调用方维护的QDomDocument中的元素
+    return true;
 }
+
+bool read_xml_cmd( QString path )
+{
+    QDomElement root;
+    QString errorMsg ;
+    int errorLine , errorColumn;
+    bool ret = FileTakeRootElement( path , root , errorMsg , &errorLine , &errorColumn );
+    if( ret == false )
+    { return false;  }
+    // 读取ROOT根节点成功 BuildUsrOpenFireFunc
+    QDomElement buildCommand = root.firstChildElement("BuildUsrOpenFireFunc");
+    if (buildCommand.isNull()) {
+//      qDebug() << "[错误] 未找到 BuildUsrOpenFireFunc 节点。";
+      return false ;
+    }
+    // 查找某个节点
+    QDomElement info = buildCommand.firstChildElement( "commandOpenInputValve" );
+    if (info.isNull()) {
+//      qDebug() << "[错误] OpenAirValveBeforeFireCommand 节点不完整。";
+      return false;
+    }
+    // 查找某个节点
+    QDomElement childInfo = info.firstChildElement( "enable" );
+    if (info.isNull()) {
+//      qDebug() << "[错误] enable 节点不完整。";
+      return false ;
+    }
+    qDebug()<<"childInfo-text"<<childInfo.text() ;
+    return childInfo.text().contains("true")?true:false;
+}
+
+
+// 解析slave_id的辅助函数
+QList<quint8> parseSlaveId(const QString& text, const QDomElement& element) {
+    QList<quint8> slaveList;
+
+    QString useSlaveId = element.attribute("use_slaveid", "false");
+    if (useSlaveId.compare("true", Qt::CaseInsensitive) != 0) {
+        return slaveList;
+    }
+
+    if (text.isEmpty()) return slaveList;
+
+    // 处理可能的格式问题（如0xA40xA5变为0xA4,0xA5）
+    QString processedText = text;
+    processedText.replace(QRegExp("(0x[0-9A-Fa-f]+)(0x)"), "\\1,\\2");
+
+    QStringList idStrings = processedText.split(',', Qt::SkipEmptyParts);
+    for (const QString& idStr : idStrings) {
+        QString trimmedStr = idStr.trimmed();
+        if (!trimmedStr.isEmpty()) {
+            bool ok;
+            quint8 idValue = trimmedStr.toUInt(&ok, 16);
+            if (ok) {
+                slaveList.append(idValue);
+            }
+        }
+    }
+    return slaveList;
+}
+
+
+
+// 解析write_buffer的辅助函数
+QByteArray parseWriteBuffer(const QString& text, const QDomElement& element) {
+//    QByteArray buffer;
+//    if (text.isEmpty()) return buffer;
+
+//    QString cleanText = text;
+//    cleanText.remove(QRegExp("\\s")); // 移除空白字符
+//    uint8_t ucCleanValue = cleanText.toUInt() & 0xFF ;
+//    buffer = QByteArray::fromHex( QByteArray::number( ucCleanValue ) );
+
+//    return buffer;
+
+    QByteArray buffer;
+
+        if (text.isEmpty()) {
+            return buffer;
+        }
+
+        // 获取size属性，默认为1（兼容旧格式）
+        int expectedSize = 1;
+        if (element.hasAttribute("size")) {
+            bool ok;
+            expectedSize = element.attribute("size").toInt(&ok);
+            if (!ok || expectedSize <= 0) {
+                qWarning() << "Invalid size attribute, using default value 1";
+                expectedSize = 1;
+            }
+        }
+
+        // 预处理文本：移除所有空白字符和"0x"前缀
+        QString processedText = text;
+        processedText.remove(QRegExp("\\s")); // 移除空白字符（空格、换行等）
+        processedText.remove(QRegExp("0x"));  // 移除十六进制前缀"0x"
+        processedText.remove(',');             // 移除逗号分隔符
+
+        // 检查处理后的字符串长度是否为偶数（有效的十六进制字符串）
+        if (processedText.length() % 2 != 0) {
+            qWarning() << "Invalid hex string length after preprocessing:" << processedText;
+            return buffer;
+        }
+
+        // 将十六进制字符串转换为QByteArray
+        buffer = QByteArray::fromHex(processedText.toLatin1());
+
+        // 验证解析后的数据长度是否符合size属性预期
+        if (buffer.size() != expectedSize) {
+            qWarning() << "Parsed data size" << buffer.size()
+                       << "does not match expected size" << expectedSize;
+            // 可以根据需要截断或填充数据，这里直接返回解析结果
+        }
+
+        return buffer;
+}
+
+// 核心解析函数 - 解析单个命令元素
+bool parseCommandElement(const QDomElement& element, CommandParams& params) {
+    params.commandType = element.tagName();
+
+    QDomNode child = element.firstChild();
+    while (!child.isNull()) {
+        if (child.isElement()) {
+            QDomElement childElem = child.toElement();
+            QString tagName = childElem.tagName();
+            QString text = childElem.text().trimmed();
+
+            if (tagName == "id") {
+                params.id = text.toInt();
+            } else if (tagName == "enable") {
+                params.enable = (text.compare("true", Qt::CaseInsensitive) == 0);
+            } else if (tagName == "slave_id") {
+                params.slave_id = parseSlaveId(text, childElem);
+            } else if (tagName == "func") {
+                params.func = text.toUInt(nullptr, 16);
+            } else if (tagName == "address") {
+                params.address = text.toUInt(nullptr, 16);
+            } else if (tagName == "write_buffer") {
+                params.write_buffer = parseWriteBuffer(text , childElem);
+            } else if (tagName == "read_length") {
+                params.read_length = text.toInt();
+            }
+        }
+        child = child.nextSibling();
+    }
+    return true;
+}
+
+// 主解析函数 - 遍历所有命令并排序
+QList<CommandParams> parseAllCommands(const QDomElement& rootElement) {
+    QList<CommandParams> commands;
+
+    QDomNode node = rootElement.firstChild();
+    while (!node.isNull()) {
+        if (node.isComment()) {
+            node = node.nextSibling();
+            continue;
+        }
+
+        if (node.isElement()) {
+            CommandParams params;
+            if (parseCommandElement(node.toElement(), params)) {
+                commands.append(params);
+            }
+        }
+        node = node.nextSibling();
+    }
+
+    // 按照id进行排序
+    std::sort(commands.begin(), commands.end(),
+             [](const CommandParams& a, const CommandParams& b) {
+                 return a.id < b.id;
+             });
+
+    return commands;
+}
+
+// 使用示例：从XML文件解析
+QList<CommandParams> parseXmlFile(const QString& filePath) {
+    QList<CommandParams> commands;
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "无法打开文件:" << filePath;
+        return commands;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "无法解析XML文件";
+        file.close();
+        return commands;
+    }
+    file.close();
+
+    QDomElement root = doc.documentElement();
+    QDomElement buildFuncElement = root.firstChildElement("BuildUsrOpenFireFunc");
+    if (buildFuncElement.isNull()) {
+        qWarning() << "未找到BuildUsrOpenFireFunc节点";
+        return commands;
+    }
+    return parseAllCommands(buildFuncElement);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
