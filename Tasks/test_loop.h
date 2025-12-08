@@ -12,6 +12,8 @@
 #include "./Modbus/gt_modbus.h"
 #include <QTimer>
 
+#define GAS_SMOOTH_TIME 3
+
 class TestLoop : public QObject {
   Q_OBJECT
 public:
@@ -108,9 +110,13 @@ public slots:
   // 优化后代码
   // ===================================================================
   // ====================== 打开2KPa阀门 ================================
-  void LST_CommandOpenInputSwitch();
+  void LST_CommandOpenInputSwitch2KPa();
+  // ====================== 关闭2KPa阀门 ===============================
+  void LST_CommandCloseInputSwitch2KPa();
   // ====================== 轮询打开所有阀门 =============================
   void LST_CommandPollingOpenAllSwitch(void);
+  // 所有阀门状态
+  void LST_CommandPollReadSwitch( QList<DeviceInfo> data );
 
   // ====================== 欠压流程执行 =================================
   void DO_TaskCheckLowPressure(QList<DeviceInfo> data);
