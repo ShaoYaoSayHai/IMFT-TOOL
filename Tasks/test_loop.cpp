@@ -652,7 +652,7 @@ void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data) {
     emit logCurrentStep(
                 "========================= 超压功能测试 END =========================");
     // 设置常开模式
-    LST_CommandPollSetSwitchMode( data );
+//    LST_CommandPollSetSwitchMode( data );
 }
 
 void TestLoop::DO_SubmitInfoToMES(QList<DeviceInfo> data) {
