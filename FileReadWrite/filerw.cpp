@@ -560,7 +560,57 @@ QList<CommandParams> parseXmlFile(const QString& filePath) {
 
 
 
+QString parseLoginResponse(const QString& jsonResponse) {
+    // 第一步：解析外层JSON
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonResponse.toUtf8());
+    if (jsonDoc.isNull()) {
+        qWarning() << "Failed to parse JSON response.";
+        return "Error: Invalid JSON";
+    }
 
+    QJsonObject jsonObj = jsonDoc.object();
+    if (!jsonObj.contains("d")) {
+        qWarning() << "JSON response does not contain 'd' field.";
+        return "Error: Missing 'd' field";
+    }
+
+    // 获取内层的XML字符串，并处理Unicode转义序列（如\u003c）
+    QString innerXmlString = jsonObj["d"].toString();
+
+    // 第二步：准备解析内层XML
+    QXmlStreamReader xmlReader(innerXmlString);
+
+    QString retVal;
+    QString retMsg;
+
+    // 遍历XML元素
+    while (!xmlReader.atEnd() && !xmlReader.hasError()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+
+        // 查找开始标签
+        if (token == QXmlStreamReader::StartElement) {
+            if (xmlReader.name() == "info") {
+                // 提取RETVAL和RETMSG属性
+                retVal = xmlReader.attributes().value("RETVAL").toString();
+                retMsg = xmlReader.attributes().value("RETMSG").toString();
+                break; // 找到所需信息后退出循环
+            }
+        }
+    }
+
+    // 检查XML解析是否出错
+    if (xmlReader.hasError()) {
+        qWarning() << "XML parsing error:" << xmlReader.errorString();
+        return "Error: XML parse failed";
+    }
+
+    // 第三步：根据RETVAL判断返回结果
+    if (retVal == "1") {
+        return "PASS"; // 成功时返回PASS
+    } else {
+        return retMsg; // 失败时返回完整的错误信息
+    }
+}
 
 
 

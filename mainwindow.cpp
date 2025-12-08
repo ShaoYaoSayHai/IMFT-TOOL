@@ -27,6 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   // HTTP 客户端测试
 //  pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251120_10006\" STA=\"OMFT\"/></root>" );
+  connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::sendHttpParam , pxHttpClient , &HttpClient::postMesCheck );
+  connect( pxHttpClient , &HttpClient::requestFinished , pxBrowserLogs , &Logs::LogBrowserWrite );
 }
 
 MainWindow::~MainWindow() {
@@ -191,12 +193,12 @@ void MainWindow::GUI_TableInit() {
           &GT_Modbus::sig_updateValveStatus, this,
           [=](uint8_t slaveID, uint8_t value) {
             // 在这里直接处理阀门状态更新逻辑
-            qDebug() << "从机地址:" << slaveID << "阀门状态:" << value;
-            qDebug() << "转换后查询地址 - " << QString::number(slaveID);
-            // 遍历整个Table，然后查询到对应的item，value=1表示打开成功，0表示关闭成功
+//            qDebug() << "从机地址:" << slaveID << "阀门状态:" << value;
+//            qDebug() << "转换后查询地址 - " << QString::number(slaveID);
+            // 遍历整个Table，然后查询到对应的item，value=0表示打开成功，1表示关闭成功
             int row = (findFirstColumnMatchRow(ui->tableWidget,QString::number(slaveID)));
             if( row == -1 ){return ;}
-            if (value) {
+            if (value == 0) {
                 qDebug()<<"绘制行数"<<row ;
               pxTable->SetCellItem(row+1, 4, "PASS");
               pxTable->SetCellColor(row+1, 4, TableControl::GREEN);
@@ -411,8 +413,6 @@ void MainWindow::on_pushButton_4_clicked()
 {
 //    QString info = InfoParser::generateXmlString("CE02_251120_10006" , "OMFT") ;
 //    pxHttpClient->postMesCheck( info ) ;
-
-//    OMFT_SubmitTestResultToMES();
     pxTestWorkerHandler->OMFT_SubmitTestResultToMES(GT_DeviceList) ;
 }
 

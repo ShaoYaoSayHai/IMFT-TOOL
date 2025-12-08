@@ -19,6 +19,8 @@ public:
     explicit HttpClient(QObject *parent = nullptr);
     ~HttpClient();
 
+    bool updateFlag = false ;
+
     // 触发 GET 请求
     void doGet(const QUrl &url);
 
@@ -35,10 +37,12 @@ public:
     void recvMessageCallback( QByteArray &jsonPayload );
 
 signals:
-    void requestFinished(const QByteArray &data);
+    void requestFinished(QByteArray data);
     void requestFailed(const QString &errorString);
 
     void sigRequestDataParser(QByteArray);
+
+//    void errorHappend(  );
 
 private slots:
     void onFinished(QNetworkReply *reply);

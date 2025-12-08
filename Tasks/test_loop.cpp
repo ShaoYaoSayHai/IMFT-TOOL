@@ -121,15 +121,21 @@ void TestLoop::onReadAllGTDevicePressure(QList<DeviceInfo> list) {
  * @return
  */
 QByteArray TestLoop::GT_BuildDeviceFactoryModeEnter(QByteArray address) {
+
+#if 0
+#else
+    //
     bool ok = false;
     QByteArray qbyData;
     int value = address.toInt(&ok, 10); // GT 设备地址提取
-    uint8_t factoryModeBuffer[7] = "rcyigb";
-    factoryModeBuffer[6] = 0x01;
+    uint8_t factoryModeBuffer[1];
+    factoryModeBuffer[0] = 0x01;
     qbyData = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, REG_GT_FACTORY,
                                               factoryModeBuffer,
                                               sizeof(factoryModeBuffer), NULL);
     return qbyData;
+
+#endif
 }
 
 /**
@@ -246,6 +252,8 @@ void TestLoop::GT_ResetDeviceErrorAll(QList<DeviceInfo> list) {
 }
 
 void TestLoop::GT_EnterFactoryModeAll(QList<DeviceInfo> list) {
+
+#if 0
     for (int i = 0; i < list.size(); i++) {
         emit sendMethodToSerial(
                     GT_BuildDeviceFactoryModeEnter(list.at(i).slaveID)); // 发送大气压读取
@@ -253,6 +261,16 @@ void TestLoop::GT_EnterFactoryModeAll(QList<DeviceInfo> list) {
 
         emit logCurrentStep((list.at(i).SN + "进入产测模式"));
     }
+#else
+    for (int i = 0; i < list.size(); i++) {
+        emit sendMethodToSerial(
+                    GT_BuildDeviceFactoryModeEnter(list.at(i).slaveID)); // 进入产测模式
+        QThread::msleep(200);
+
+        emit logCurrentStep((list.at(i).SN + "进入产测模式"));
+    }
+#endif
+
 }
 
 void TestLoop::GT_ExitFactoryModeAll(QList<DeviceInfo> list) {
@@ -263,6 +281,25 @@ void TestLoop::GT_ExitFactoryModeAll(QList<DeviceInfo> list) {
 
         emit logCurrentStep((list.at(i).SN + "退出产测模式"));
     }
+}
+
+QByteArray TestLoop::GT_SetSwitchModeInClosed(QByteArray address)
+{
+    bool ok = false;
+    QByteArray ret;
+    int value = address.toInt(&ok, 10); // slaveID
+    uint16_t reg = 0x5084;
+    // 遍历XML文件内容 获取到清除异常地址
+    for (int i = 0; i < commandList.size(); i++) {
+        if (commandList.at(i).commandType.contains("CommandSetSwitchMode")) {
+            reg = commandList.at(i).address;
+            break;
+        }
+    }
+    uint8_t setValue = 0x01 ;
+    ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, reg, &setValue, 1,
+                                          NULL);
+    return ret ;
 }
 
 void TestLoop::onTestBaseCmdAll() {
@@ -327,7 +364,7 @@ QByteArray TestLoop::CTL_BuildDeviceSwitchOpen(QByteArray address) {
     bool ok = false;
     QByteArray ret;
     int value = address.toInt(&ok, 16); //
-    qDebug() << "DEBUG +++ slaveID" << value;
+//    qDebug() << "DEBUG +++ slaveID" << value;
     uint8_t buffer[1] = {0x01};
     ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, 0x2001, buffer, 1, NULL);
     return ret;
@@ -490,6 +527,16 @@ void TestLoop::LST_CommandPollReadSwitch(QList<DeviceInfo> data)
     }
 }
 
+void TestLoop::LST_CommandPollSetSwitchMode(QList<DeviceInfo> data)
+{
+    // 先读取大气压
+    for (int i = 0; i < data.size(); i++) {
+        emit sendMethodToSerial(
+                    GT_SetSwitchModeInClosed(data.at(i).slaveID)); // 发送常开模式设置
+        QThread::msleep(50);
+    }
+}
+
 void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
     // 进入产测模式
     emit logCurrentStep(
@@ -527,6 +574,10 @@ void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
     }
     // 清除所有异常信息
     GT_ResetDeviceErrorAll(data);
+    for (int i = 0; i < GAS_SMOOTH_TIME; i++) {
+        emit logCurrentStep("等待压力稳定 " + QByteArray::number(GAS_SMOOTH_TIME - i));
+        QThread::msleep(1000); // 等待1s
+    }
     // 模拟点火开阀
     LST_CommandPollingOpenAllSwitch();
     QThread::msleep(2000);
@@ -584,12 +635,10 @@ void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data) {
     emit logCurrentStep("开启高压进气端阀门" + Addr);
     CTL_SetInputControlDeviceSwitchOpen(Addr);
 
-    emit logCurrentStep("等待压力稳定 3");
-    QThread::msleep(1000); // 等待2s
-    emit logCurrentStep("等待压力稳定 2");
-    QThread::msleep(1000); // 等待2s
-    emit logCurrentStep("等待压力稳定 1");
-    QThread::msleep(1000); // 等待2s
+    for (int i = 0; i < GAS_SMOOTH_TIME; i++) {
+        emit logCurrentStep("等待压力稳定 " + QByteArray::number(GAS_SMOOTH_TIME - i));
+        QThread::msleep(1000); // 等待1s
+    }
 
     // // 执行所有压力读取
     emit logCurrentStep("读取所有压力数据");
@@ -602,13 +651,17 @@ void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data) {
     GT_ExitFactoryModeAll(data);
     emit logCurrentStep(
                 "========================= 超压功能测试 END =========================");
+    // 设置常开模式
+    LST_CommandPollSetSwitchMode( data );
 }
 
 void TestLoop::DO_SubmitInfoToMES(QList<DeviceInfo> data) {
     for (DeviceInfo &device : data) {
         QString sn = device.SN;
         QString info = InfoParser::generateXmlString(sn, "OMFT");
-        qDebug() << info;
+        emit logCurrentStep("GET -- " + info.toUtf8());
+        emit sendHttpParam( info );
+        QThread::msleep(200) ;
     }
 }
 

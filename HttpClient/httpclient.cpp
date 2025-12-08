@@ -38,7 +38,7 @@ void HttpClient::doPost(const QUrl &url,
                         const QByteArray &body,
                         const QString &contentType)
 {
-    qDebug()<<"进入POST" ;
+//    qDebug()<<"进入POST" ;
     QNetworkRequest request(url);
     // request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setHeader(QNetworkRequest::ContentTypeHeader, contentType);
@@ -50,8 +50,6 @@ void HttpClient::postMesCheck(const QString &info)
 {
     QJsonObject jsonData;
     jsonData["InputXml"] = info;
-//    jsonData["userid"] = "1551769443";
-//    jsonData["passwd"] = "123";
     QJsonDocument doc(jsonData);
     QByteArray data = doc.toJson();
     this->doPost(QUrl("http://192.168.30.133:6688/WebService1.asmx/MesCheck"),
@@ -89,6 +87,7 @@ void HttpClient::recvMessageCallback( QByteArray &jsonPayload )
         const QString iccid = map.value(QStringLiteral("ICCID"));
         QString msg = buildInputPayload( map.value(QStringLiteral("SN")) , "OMFT" , map.value("IMEI1") , map.value(QStringLiteral("ICCID")) );
         qDebug()<<"拼接内容 - "<<msg ;
+        this->postMesUpdate( msg ); // 更新到最后
     }
 }
 
@@ -101,8 +100,11 @@ void HttpClient::onFinished(QNetworkReply *reply)
         QString responseString = QString::fromUtf8(response);
         qDebug() << "Login successful! Response:" << responseString;
         this->msg = responseString.toUtf8() ;
-
-        recvMessageCallback( this->msg );
+        recvMessageCallback( this->msg ); // 拼接出结果
+        // 解析异常
+//        QString ret = parseLoginResponse( responseString );
+//        qDebug()<<"返回值 : "<<ret ;
+        emit requestFinished( response );
     }
     else
     {

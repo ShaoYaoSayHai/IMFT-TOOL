@@ -8,6 +8,10 @@
 #include <QFile>
 #include <QTextStream>
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QXmlStreamReader>
+
 // 定义设备信息结构体
 struct CLTDeviceInfo {
   QString address;
@@ -75,5 +79,7 @@ QList<CommandParams> parseAllCommands(const QDomElement& rootElement) ;
 
 // 使用示例：从XML文件解析
 QList<CommandParams> parseXmlFile(const QString& filePath) ;
+
+QString parseLoginResponse(const QString& jsonResponse) ;
 
 #endif // FILERW_H

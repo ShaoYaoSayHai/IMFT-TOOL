@@ -72,12 +72,15 @@ public slots:
   QByteArray GT_BuildDeviceFahouPressure(QByteArray address);
   // 清除加糖PCB的设备异常信息
   QByteArray GT_BuildDeviceErrorClear(QByteArray address);
+  // 设置出厂为常开模式
+  QByteArray GT_SetSwitchModeInClosed( QByteArray address );
   // 清除所有设备异常信息
   void GT_ResetDeviceErrorAll(QList<DeviceInfo> list);
   // 全部加糖设备进入产测模式
   void GT_EnterFactoryModeAll(QList<DeviceInfo> list);
   // 全部加糖设备退出产测模式
   void GT_ExitFactoryModeAll(QList<DeviceInfo> list);
+
 
   // 测试所有基础指令
   void onTestBaseCmdAll();
@@ -117,6 +120,8 @@ public slots:
   void LST_CommandPollingOpenAllSwitch(void);
   // 所有阀门状态
   void LST_CommandPollReadSwitch( QList<DeviceInfo> data );
+  // ====================== 设置常开模式 ================================
+  void LST_CommandPollSetSwitchMode( QList<DeviceInfo> data );
 
   // ====================== 欠压流程执行 =================================
   void DO_TaskCheckLowPressure(QList<DeviceInfo> data);
@@ -137,6 +142,8 @@ signals:
   void readPressureComplete();
   // 发送日志
   void logCurrentStep(QByteArray data);
+  // 获取到新的HTTP参数 发送给主线程
+  void sendHttpParam( const QString data );
 };
 
 #endif // TESTTASK_H
