@@ -9,41 +9,41 @@ TableControl::TableControl( QTableWidget *pxTable , QObject *parent) : QObject(p
 
 TableControl::~TableControl()
 {
-    qDebug()<<"TableControl delete success" ;
 }
 
-/**
- * @brief TableControl::SetCellColor
- * @param row 行
- * @param col 列
- * @param Color 颜色
- */
-void TableControl::SetCellColor(int row, int col, TABLE_COLOR Color)
+void TableControl::SetCellItem(int row, int col, QByteArray qbyData , TABLE_COLOR color )
 {
-    item = table->item(( row -1 ) , col-1) ;
-    if( Color == GREEN )
+//    item = table->item(( row -1 ) , col-1) ;
+//    qDebug()<<"是否是TRUE : "<<(item ? 1 : 0) <<qbyData ;
+//    item->setText(qbyData) ;
+    QTableWidgetItem *item = table->takeItem( row - 1 , col - 1 );
+    if( item )
+    delete item ;
+    qDebug()<<"进入到删除ITEM之后" ;
+    QString writeMsg ;
+    writeMsg.prepend( qbyData ) ;
+    table->setItem( row - 1 , col - 1 , new QTableWidgetItem( writeMsg ) );
+    qDebug()<<"写入ITEM" ;
+    QTableWidgetItem *newItem = table->item( row -1 , col - 1 ) ;
+    qDebug()<<"获取到newItem" ;
+    if( color == GREEN )
     {
-        item->setBackground(QColor(0,255,0)); // 设置绿色
+        newItem->setBackground(QColor(0,255,0)); // 设置绿色
     }
-    else if(Color == RED)
+    else if(color == RED)
     {
-        item->setBackground(QColor(255,0,0)); // 设置红色
+        newItem->setBackground(QColor(255,0,0)); // 设置红色
     }
     else
     {
-        item->setBackground(QColor(255,255,255)); // 设置红色
+        newItem->setBackground(QColor(255,255,255)); // 设置红色
     }
-}
-
-void TableControl::SetCellItem(int row, int col, QByteArray qbyData)
-{
-    item = table->item(( row -1 ) , col-1) ;
-    qDebug()<<(item ? 1 : 0) <<qbyData ;
-    item->setText(qbyData) ;
+    qDebug()<<"NEW ITEM 背景色写入完成" ;
 }
 
 void TableControl::ClearAllItems()
 {
+#if 0
     int row = table->rowCount() ;
     int col = table->columnCount() ;
     qDebug()<<"row : " << row ;
@@ -57,6 +57,10 @@ void TableControl::ClearAllItems()
             item->setBackground( QColor(255,255,255) );
         }
     }
+
+#else
+    table->clearContents() ;
+#endif
 }
 
 
@@ -81,9 +85,9 @@ int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareStr
             qDebug() << "警告：第" << row << "行第0列的单元格为空，跳过检查";
             continue;
         }
-        qDebug()<<"查找内容 - "<<(item->text().mid( (item->text().size()-3) , (item->text().size()))) ;
+        qDebug()<<"查找内容 - "<<(item->text().mid( (item->text().size()-2) , (item->text().size()))) ;
         // 比较单元格文本与目标字符串
-        QString currentLine = (item->text().mid( (item->text().size()-3) , (item->text().size()))) ;
+        QString currentLine = (item->text().mid( (item->text().size()-2) , (item->text().size()))) ;
         int lineValue = currentLine.toUInt() ;
         qDebug()<<"转换后的SLAVEID - "<<lineValue <<"待查找的ID"<<searchLine ;
         if( searchLine == lineValue )

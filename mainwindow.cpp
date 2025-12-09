@@ -29,6 +29,22 @@ MainWindow::MainWindow(QWidget *parent)
 //  pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251120_10006\" STA=\"OMFT\"/></root>" );
   connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::sendHttpParam , pxHttpClient , &HttpClient::postMesCheck );
   connect( pxHttpClient , &HttpClient::requestFinished , pxBrowserLogs , &Logs::LogBrowserWrite );
+
+  ui->tableWidget->setItem(0 , 0 , new QTableWidgetItem("CE02_251205_10151")) ;
+  ui->tableWidget->setItem(1 , 0 , new QTableWidgetItem("CE02_251205_10015")) ;
+  for ( int i = 0 ; i < 8 ; i++) {
+        QTableWidgetItem *item1 = ui->tableWidget->item(i,0) ;
+        QString text = item1->text() ;
+        qDebug()<<"第一列文本内容 : "<<text ;
+  }
+  // Table函数改良后测试
+  qDebug()<<"返回查询到的行 : "<<findFirstColumnMatchRow( ui->tableWidget , "15" );
+
+  ui->tableWidget->clearContents() ; // 清除所有Item，保留行数
+  ui->tableWidget->setItem(0 , 0 , new QTableWidgetItem("HAHAH 00000")) ;
+  ui->tableWidget->setItem(1 , 0 , new QTableWidgetItem("JJJJJ 11111")) ;
+
+  pxTable->SetCellItem( 1 , 1 , "彻底失败" , TableControl::RED );
 }
 
 MainWindow::~MainWindow() {
@@ -43,6 +59,9 @@ MainWindow::~MainWindow() {
 
   // UI类回收
   ReleaseUiClasses();
+
+  // 清空整个TableWidget
+  ui->tableWidget->setRowCount(0) ;
 
   delete ui;
 }
@@ -179,7 +198,7 @@ void MainWindow::GUI_TableInit() {
               device.slaveID = data.mid(data.size() - 2, data.size());
             GT_DeviceList.append(device);
             int size = GT_DeviceList.size();
-            pxTable->SetCellItem(size, 1, GT_DeviceList.at(size - 1).SN);
+            pxTable->SetCellItem(size, 1, GT_DeviceList.at(size - 1).SN , TableControl::GREEN);
             ui->lineEdit->setText("");
 
             for( int i=0;i<GT_DeviceList.size();i++ )
@@ -187,6 +206,8 @@ void MainWindow::GUI_TableInit() {
                 qDebug()<<"SN - "<<GT_DeviceList.at(i).SN;
                 qDebug()<<"ID - "<<GT_DeviceList.at(i).slaveID ;
             }
+
+            return ;
           });
   // 槽函数绑定，将结果显示在窗口内
   connect(&(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
@@ -208,11 +229,9 @@ void MainWindow::GUI_TableInit() {
             if( row == -1 ){return ;}
             if (value == 0) {
                 qDebug()<<"绘制行数"<<row ;
-              pxTable->SetCellItem(row+1, 4, "PASS");
-              pxTable->SetCellColor(row+1, 4, TableControl::GREEN);
+              pxTable->SetCellItem(row+1, 4, "PASS" , TableControl::GREEN);
             } else {
-              pxTable->SetCellItem(row+1, 4, "FAIL");
-              pxTable->SetCellColor(row+1, 4, TableControl::RED);
+              pxTable->SetCellItem(row+1, 4, "FAIL" , TableControl::RED);
             }
           });
     // 发送完毕执行复位操作
@@ -325,10 +344,7 @@ void MainWindow::onTableMapping() {
         if (pressDiff < 800) {
           pxTable->SetCellItem(
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
-              QString::number(pressDiff).toUtf8());
-          pxTable->SetCellColor(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
-              TableControl::GREEN);
+              QString::number(pressDiff).toUtf8(), TableControl::GREEN);
           DeviceInfoReset(device);
 
           device.low_press_status = true ;
@@ -336,10 +352,7 @@ void MainWindow::onTableMapping() {
         } else {
           pxTable->SetCellItem(
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
-              QString::number(pressDiff).toUtf8());
-          pxTable->SetCellColor(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
-              TableControl::RED);
+              QString::number(pressDiff).toUtf8() , TableControl::RED);
           DeviceInfoReset(device);
 
           device.low_press_status = false ;
@@ -353,19 +366,13 @@ void MainWindow::onTableMapping() {
         if (pressDiff > 6000) {
           pxTable->SetCellItem(
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
-              QString::number(pressDiff).toUtf8());
-          pxTable->SetCellColor(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
-              TableControl::GREEN);
+              QString::number(pressDiff).toUtf8() , TableControl::GREEN);
           DeviceInfoReset(device);
           device.over_press_status = true ;
         } else {
           pxTable->SetCellItem(
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
-              QString::number(pressDiff).toUtf8());
-          pxTable->SetCellColor(
-              (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
-              TableControl::RED);
+              QString::number(pressDiff).toUtf8() ,  TableControl::RED);
           DeviceInfoReset(device);
           device.over_press_status = false ;
         }
@@ -385,20 +392,14 @@ void MainWindow::onResetTestFlag()
         {
             pxTable->SetCellItem(
                 (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
-                "FAIL");
-            pxTable->SetCellColor(
-                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
-                TableControl::RED);
+                "FAIL" , TableControl::RED);
         }
         // 欠压查询
         if( (device.airPress == 0 || device.infPress == 0) && DoTestFlag.QianYaTest != false )
         {
             pxTable->SetCellItem(
                 (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
-                "FAIL");
-            pxTable->SetCellColor(
-                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
-                TableControl::RED);
+                "FAIL" , TableControl::RED);
         }
         // 销毁数据
         device.airPress = 0;
@@ -421,10 +422,7 @@ void MainWindow::checkAllSwitchStatus()
         {
             pxTable->SetCellItem(
                 (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 4,
-                "FAIL");
-            pxTable->SetCellColor(
-                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 4,
-                TableControl::RED);
+                "FAIL" ,  TableControl::RED);
         }
     }
     ResetButtonEnable();

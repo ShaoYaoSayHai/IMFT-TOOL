@@ -14,31 +14,12 @@
             <DeviceAddress>0xA3</DeviceAddress>
             <DeviceType>0x0001</DeviceType>
         </DeviceNode>
-        <!-- <DeviceNode>
-            <DeviceAddress>0xA4</DeviceAddress>
-            <DeviceType>0x0001</DeviceType>
-        </DeviceNode> -->
-        <!-- <DeviceNode>
-            <DeviceAddress>0xA5</DeviceAddress>
-            <DeviceType>0x0001</DeviceType>
-        </DeviceNode>
-        <DeviceNode>
-            <DeviceAddress>0xA6</DeviceAddress>
-            <DeviceType>0x0001</DeviceType>
-        </DeviceNode>
-        <DeviceNode>
-            <DeviceAddress>0xA7</DeviceAddress> 
-            <DeviceType>0x0001</DeviceType>
-        </DeviceNode>
-        <DeviceNode>
-            <DeviceAddress>0xA8</DeviceAddress>
-            <DeviceType>0x0001</DeviceType>
-        </DeviceNode> -->
+
     </ParentDeviceNode>
     <!-- 父开关打开时间 -->
     <DeviceSwitchConfig>
         <SwitchOpenTime>1000</SwitchOpenTime>
-        <SwitchCloseTime>1000</SwitchCloseTime>
+        <SwitchCloseTime>600</SwitchCloseTime>
         <SwitchResetTime>500</SwitchResetTime>
     </DeviceSwitchConfig>
     <ReadPressureTimeConfig>
@@ -68,16 +49,107 @@
     </MesConfig>
     <LowPressureDetectionConfig>
         <!-- 欠压的数据标准 -->
-        <LowPressureThreshold>800</LowPressureThreshold>
-        <LowPressureTestCommond>
-            <write_len>256</write_len>
-            <enable>true</enable>
-            <write_buffer size="256">
-            {
-                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-            }
-            </write_buffer>
-        </LowPressureTestCommond>
     </LowPressureDetectionConfig>
+    <!-- 点火开阀测试功能 -->
+    <CommandConfigList>
+        <!-- 首先执行打开进气端2KPa阀门 BEGIN -->
+        <CommandConfig>
+            <id>0</id>
+            <enable>true</enable>
+            <slave_id type="LST">0xB1</slave_id>
+            <func>0x06</func>
+            <address>0x2001</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+            <time_interval>3000</time_interval>
+        </CommandConfig>
+        <!-- 首先执行打开进气端2KPa阀门 END -->
+        <!-- 清除异常命令 BEGIN -->
+        <CommandConfig>
+            <id>1</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x06</func>
+            <address>0x5080</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+            <time_interval>200</time_interval>
+        </CommandConfig>
+        <!-- 清除异常命令 END -->
+        <!-- 轮询点火开阀 BEGIN -->
+        <CommandConfig>
+            <id>2</id>
+            <slave_id type="LST">0xA1,0xA2,0xA3,0xA4</slave_id>
+            <enable>true</enable>
+            <func>0x06</func>
+            <address>0x2001</address>
+            <write_buffer size="1" step="1">
+            0x01
+            </write_buffer>
+            <write_buffer size="1" step="2">
+            0x00 
+            </write_buffer>
+            <time_interval>500</time_interval>
+        </CommandConfig>
+        <!-- 轮询点火开阀 NED -->
+        <!-- 读取阀门状态 -->
+        <CommandConfig>
+            <id>3</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x03</func>
+            <address>0x4033</address>
+            <read_length>1</read_length>
+            <time_interval>200</time_interval>
+        </CommandConfig>
+        <!-- 关闭进气端2KPa阀门 BEGIN -->
+        <CommandConfig>
+            <id>4</id>
+            <enable>true</enable>
+            <slave_id type="LST">0xB1</slave_id>
+            <func>0x06</func>
+            <address>0x2001</address>
+            <write_buffer size="1">
+            0x00
+            </write_buffer>
+            <time_interval>1000</time_interval>
+        </CommandConfig>
+        <!-- 关闭进气端2KPa阀门 END -->
+        <!-- 测完之后设置 重启生效 设置常开常闭模式 -->
+        <CommandConfig>
+            <id>5</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x06</func>
+            <address>0x5084</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+            <time_interval>1000</time_interval>
+        </CommandConfig>
+        <!-- 读取当前常开常闭模式 -->
+        <CommandConfig>
+            <id>6</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x03</func>
+            <address>0x5085</address>
+            <read_length>1</read_length>
+            <time_interval>1000</time_interval>
+        </CommandConfig>
+        <!-- 清除异常命令 BEGIN -->
+        <CommandConfig>
+            <id>7</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x06</func>
+            <address>0x5080</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+            <time_interval>300</time_interval>
+        </CommandConfig>
+    </CommandConfigList>
 </Root>

@@ -25,15 +25,13 @@ public:
   // 注册成QT独有的Enum
   Q_ENUM(TABLE_COLOR);
 
-  void SetCellColor(int row, int col, TABLE_COLOR Color);
-
 private:
   QTableWidget *table = nullptr;
   QTableWidgetItem *item = nullptr;
 
 public slots:
 
-  void SetCellItem(int row, int col, QByteArray qbyData);
+  void SetCellItem(int row, int col, QByteArray qbyData ,TABLE_COLOR color );
 
   void ClearAllItems();
 signals:

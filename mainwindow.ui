@@ -308,162 +308,162 @@ QPushButton{
              </column>
              <item row="0" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="0" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="0" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="0" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="1" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="1" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="1" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="1" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="2" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="2" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="2" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="2" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="3" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="3" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="3" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="3" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="4" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="4" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="4" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="4" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="5" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="5" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="5" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="5" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="6" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="6" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="6" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="6" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="7" column="0">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="7" column="1">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="7" column="2">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
              <item row="7" column="3">
               <property name="text">
-               <string/>
+               <string> </string>
               </property>
              </item>
             </widget>
@@ -503,6 +503,11 @@ QPushButton{
             </widget>
            </item>
           </layout>
+         </widget>
+         <widget class="QWidget" name="tab_3">
+          <attribute name="title">
+           <string>页</string>
+          </attribute>
          </widget>
         </widget>
        </item>
