@@ -19,8 +19,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    FileReadWrite/ModbusConfigParser.cpp \
     FileReadWrite/filerw.cpp \
-    FileReadWrite/xmlcommandparser.cpp \
     HttpClient/deviceinfo.cpp \
     HttpClient/httpclient.cpp \
     HttpClient/infoparse.cpp \
@@ -38,8 +38,8 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
+    FileReadWrite/ModbusConfigParser.h \
     FileReadWrite/filerw.h \
-    FileReadWrite/xmlcommandparser.h \
     HttpClient/deviceinfo.h \
     HttpClient/httpclient.h \
     HttpClient/infoparse.h \

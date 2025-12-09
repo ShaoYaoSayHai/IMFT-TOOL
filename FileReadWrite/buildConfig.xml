@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Root>
+    <!-- 控制阀设备数 -->
+    <ParentDeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA1</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA2</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+        <DeviceNode>
+            <DeviceAddress>0xA3</DeviceAddress>
+            <DeviceType>0x0001</DeviceType>
+        </DeviceNode>
+
+    </ParentDeviceNode>
+    <!-- 父开关打开时间 -->
+    <DeviceSwitchConfig>
+        <SwitchOpenTime>1000</SwitchOpenTime>
+        <SwitchCloseTime>600</SwitchCloseTime>
+        <SwitchResetTime>500</SwitchResetTime>
+    </DeviceSwitchConfig>
+    <ReadPressureTimeConfig>
+        <ReadAirPressureTime>1500</ReadAirPressureTime>
+        <ReadFaqianPressureTime>1500</ReadFaqianPressureTime>
+        <ReadFahouPressureTime>1500</ReadFahouPressureTime>
+        <ReadLowPressureTimeout>3000</ReadLowPressureTimeout>
+        <ReadOverPressureTimeout>3000</ReadOverPressureTimeout>
+    </ReadPressureTimeConfig>
+    <InputControlSwitch>
+        <InputControlSwitchA1>
+            <SwitchAddress>0xB1</SwitchAddress>
+            <SwitchType>0x0001</SwitchType>
+        </InputControlSwitchA1>
+        <InputControlSwitchA2>
+            <SwitchAddress>0xB2</SwitchAddress>
+            <SwitchType>0x0001</SwitchType>
+        </InputControlSwitchA2>
+    </InputControlSwitch>
+    <!-- 连接到MES系统信息 -->
+    <MesConfig>
+        <MesIp>http://192.168.30.133</MesIp>
+        <MesPort>6688</MesPort>
+        <MesEnable>1</MesEnable>
+        <MesPathUpdate>/WebService1.asmx/MesUpdate</MesPathUpdate>
+        <MesPathCheck>/WebService1.asmx/MesCheck</MesPathCheck>
+    </MesConfig>
+    <LowPressureDetectionConfig>
+        <!-- 欠压的数据标准 -->
+    </LowPressureDetectionConfig>
+    <!-- 点火开阀测试功能 -->
+    <CommandConfigList>
+        <!-- 首先执行打开进气端2KPa阀门 BEGIN -->
+        <CommandConfig>
+            <id>0</id>
+            <enable>true</enable>
+            <slave_id type="LST">0xB1</slave_id>
+            <func>0x06</func>
+            <address>0x2001</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+        </CommandConfig>
+        <!-- 首先执行打开进气端2KPa阀门 END -->
+        <!-- 清除异常命令 BEGIN -->
+        <CommandConfig>
+            <id>1</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x06</func>
+            <address>0x5080</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+        </CommandConfig>
+        <!-- 清除异常命令 END -->
+        <!-- 轮询点火开阀 BEGIN -->
+        <CommandConfig>
+            <id>2</id>
+            <slave_id type="LST">0xA1,0xA2,0xA3,0xA4</slave_id>
+            <enable>true</enable>
+            <func>0x06</func>
+            <address>0x2001</address>
+            <write_buffer size="1" step="1">
+            0x01
+            </write_buffer>
+            <write_buffer size="1" step="2">
+            0x00 
+            </write_buffer>
+        </CommandConfig>
+        <!-- 轮询点火开阀 NED -->
+        <!-- 读取阀门状态 -->
+        <CommandConfig>
+            <id>3</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x03</func>
+            <address>0x4033</address>
+            <read_length>1</read_length>
+        </CommandConfig>
+        <!-- 关闭进气端2KPa阀门 BEGIN -->
+        <CommandConfig>
+            <id>4</id>
+            <enable>true</enable>
+            <slave_id type="LST">0xB1</slave_id>
+            <func>0x06</func>
+            <address>0x2001</address>
+            <write_buffer size="1">
+            0x00
+            </write_buffer>
+        </CommandConfig>
+        <!-- 关闭进气端2KPa阀门 END -->
+        <!-- 测完之后设置 重启生效 设置常开常闭模式 -->
+        <CommandConfig>
+            <id>5</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x06</func>
+            <address>0x5084</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+        </CommandConfig>
+        <!-- 读取当前常开常闭模式 -->
+        <CommandConfig>
+            <id>6</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x03</func>
+            <address>0x5085</address>
+            <read_length>1</read_length>
+        </CommandConfig>
+        <!-- 清除异常命令 BEGIN -->
+        <CommandConfig>
+            <id>7</id>
+            <enable>true</enable>
+            <slave_id type="GT"></slave_id>
+            <func>0x06</func>
+            <address>0x5080</address>
+            <write_buffer size="1">
+            0x01
+            </write_buffer>
+        </CommandConfig>
+    </CommandConfigList>
+</Root>
