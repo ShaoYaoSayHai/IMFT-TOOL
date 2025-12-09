@@ -29,10 +29,9 @@ public slots:
     void onThreadStarted();
 
     void onThreadFinished();
-
+    // 跨线程构造执行列表
+    void onBuildTaskInfo( QList<DeviceInfo> deviceList );
     void onTakeStep1Test( QList<DeviceInfo> deviceList );
-    // 基础功能测试动作
-    void onTaskBaseCommondTest();
     // 模拟点火开阀顺序动作
     void onSimulateIgnitionAction();
     // 读取所有阀门状态

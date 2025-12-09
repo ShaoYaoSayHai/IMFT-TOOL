@@ -195,6 +195,14 @@ void MainWindow::GUI_TableInit() {
             // 在这里直接处理阀门状态更新逻辑
 //            qDebug() << "从机地址:" << slaveID << "阀门状态:" << value;
 //            qDebug() << "转换后查询地址 - " << QString::number(slaveID);
+            for( DeviceInfo &device : GT_DeviceList )
+            {
+                if( device.slaveID.toUInt() == slaveID )
+                {
+                    device.sw_status = true ;
+                    break ;
+                }
+            }
             // 遍历整个Table，然后查询到对应的item，value=0表示打开成功，1表示关闭成功
             int row = (findFirstColumnMatchRow(ui->tableWidget,QString::number(slaveID)));
             if( row == -1 ){return ;}
@@ -212,6 +220,8 @@ void MainWindow::GUI_TableInit() {
     // 日志打印
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::logCurrentStep , pxBrowserLogs , &Logs::LogBrowserWrite );
     connect( pxSerialWorkerUART_Handler , &SerialWorker::logSendMessage , pxBrowserLogs , &Logs::LogBrowserWrite );
+    // 点火开阀执行完毕 处理回调判定
+    connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::simulateIgnitionComplete , this , &MainWindow::checkAllSwitchStatus );
 }
 
 void MainWindow::onTimerTimeoutReadSN() {
@@ -320,6 +330,9 @@ void MainWindow::onTableMapping() {
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
               TableControl::GREEN);
           DeviceInfoReset(device);
+
+          device.low_press_status = true ;
+
         } else {
           pxTable->SetCellItem(
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
@@ -328,6 +341,8 @@ void MainWindow::onTableMapping() {
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 2,
               TableControl::RED);
           DeviceInfoReset(device);
+
+          device.low_press_status = false ;
         }
       }
     }
@@ -343,6 +358,7 @@ void MainWindow::onTableMapping() {
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
               TableControl::GREEN);
           DeviceInfoReset(device);
+          device.over_press_status = true ;
         } else {
           pxTable->SetCellItem(
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
@@ -351,6 +367,7 @@ void MainWindow::onTableMapping() {
               (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 3,
               TableControl::RED);
           DeviceInfoReset(device);
+          device.over_press_status = false ;
         }
       }
     }
@@ -393,6 +410,26 @@ void MainWindow::onResetTestFlag()
     DoTestFlag.QianYaTest = false;
 }
 
+/**
+ * @brief 对所有的限位开关最终状态检测，如若存在未回传的则表示错误
+ */
+void MainWindow::checkAllSwitchStatus()
+{
+    for( DeviceInfo &device : GT_DeviceList )
+    {
+        if( device.sw_status == false )
+        {
+            pxTable->SetCellItem(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 4,
+                "FAIL");
+            pxTable->SetCellColor(
+                (findFirstColumnMatchRow(ui->tableWidget, device.slaveID) + 1), 4,
+                TableControl::RED);
+        }
+    }
+    ResetButtonEnable();
+}
+
 void MainWindow::on_pushButton_3_clicked()
 {
     DoTestFlag.ChaoYaTest = true;
@@ -404,6 +441,8 @@ void MainWindow::on_pushButton_3_clicked()
 void MainWindow::on_pushButton_2_clicked()
 {
     pxTestWorkerHandler->OMFT_OpenFireFunc(GT_DeviceList);
+    // 按钮互斥
+    SetButtonDisable();
 }
 
 /**
@@ -418,5 +457,12 @@ void MainWindow::on_pushButton_4_clicked()
 
 void MainWindow::on_pushButton_7_clicked()
 {
-    pxTestWorkerHandler->OMFT_ControlTaskInit() ;
+//    pxTestWorkerHandler->OMFT_ControlTaskInit() ;
+    for( DeviceInfo &device : GT_DeviceList )
+    {
+        device.sw_status = false ;
+        device.low_press_status = false ;
+        device.over_press_status = false ;
+    }
+    pxTestWorkerHandler->onBuildTaskInfo( GT_DeviceList );
 }

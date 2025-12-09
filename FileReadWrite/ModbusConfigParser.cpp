@@ -17,6 +17,7 @@ void TaskInfo::printInfo() const
     qDebug() << "  Function:" << QString("0x%1").arg(func, 2, 16, QChar('0')).toUpper();
     qDebug() << "  Address:" << QString("0x%1").arg(address, 4, 16, QChar('0')).toUpper();
     qDebug() << "  Read Length:" << read_length;
+    qDebug() << "  Time Interval:"<<time_interval ;
 
     qDebug() << "  Write Buffers (" << write_buffers.size() << " steps):";
     for (int i = 0; i < write_buffers.size(); i++) {
@@ -113,6 +114,12 @@ QList<TaskInfo> ModbusConfigParser::parseConfigImpl(const QDomDocument& doc, con
         if (!enableElem.isNull()) {
             QString enableText = enableElem.text().trimmed().toLower();
             task.enable = (enableText == "true" || enableText == "1");
+        }
+
+        QDomElement timeIntervalElem = configElem.firstChildElement("time_interval") ;
+        if( !timeIntervalElem.isNull() ){
+            int intervalText = timeIntervalElem.text().trimmed().toUInt();
+            task.time_interval = intervalText ;
         }
 
         // 解析slave_id（根据type属性处理）

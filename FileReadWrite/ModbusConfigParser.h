@@ -22,6 +22,7 @@ struct TaskInfo {
     uint16_t address;               ///< 寄存器地址
     QList<QByteArray> write_buffers; ///< 写入缓冲区列表（按step排序的缓冲区列表）
     int read_length;                ///< 读取长度（0表示写操作）
+    uint16_t time_interval ;        ///<读取时间间隔
 
     // 默认构造函数
     TaskInfo() : id(0), enable(false), func(0), address(0), read_length(0) {}

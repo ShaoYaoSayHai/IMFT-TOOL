@@ -2,6 +2,7 @@
 #include "hexprintf.h"
 #include <QDebug>
 #include <QThread>
+#include "hexprintf.h"
 
 #define FACTORY_MODE_TIME_INTERVAL (100)
 
@@ -50,17 +51,32 @@ void TestLoop::TestTaskInit() {
     connect(pxTimerReadTimeout, &QTimer::timeout, this,
             &TestLoop::TimerReadTimeoutCallback);
 
-    // 初始化队列
-    commandList = parseXmlFile("./buildConfig.xml");
+    // 执行测试任务
+    // 从文件解析配置
+    QList<uint8_t> gtSlaveIds ;
+//    gtSlaveIds<<0xC1<<0xC2<<0xC3 ;
+    tasks = ModbusConfigParser::parseConfig("./buildConfig.xml", gtSlaveIds);
 
-    // 遍历结果
-    for (const CommandParams &cmd : commandList) {
-        qDebug() << "ID:" << cmd.id << " Type: " << cmd.commandType
-                 << " Slave IDs:" << cmd.slave_id << " - enable : " << cmd.enable
-                 << " - writeBuffer:" << cmd.write_buffer.toHex()
-                 << " - func:" << cmd.func << " - address"
-                 << QString::number(cmd.address, 16);
-    }
+//    qDebug() << "从文件解析到" << tasks.size() << "个任务:";
+//    qDebug() << "========================================";
+//    // 打印所有任务信息
+//    for (int i = 0; i < tasks.size(); i++) {
+//        const TaskInfo& task = tasks[i];
+//        qDebug() << "\n任务" << i + 1 << ":";
+//        task.printInfo();
+//        // 特殊处理：对于有多个步骤的写操作，展示执行顺序
+//        if (task.write_buffers.size() > 1 && task.slave_ids.size() > 0) {
+//            qDebug() << "  执行顺序:";
+//            for (int slaveIdx = 0; slaveIdx < task.slave_ids.size(); slaveIdx++) {
+//                uint8_t slaveId = task.slave_ids[slaveIdx];
+//                for (int stepIdx = 0; stepIdx < task.write_buffers.size(); stepIdx++) {
+//                    qDebug() << "    从机 0x" << QString("%1").arg(slaveId, 2, 16, QChar('0')).toUpper()
+//                             << " 步骤" << (stepIdx + 1) << ": "
+//                             << task.write_buffers[stepIdx].toHex(' ').toUpper();
+//                }
+//            }
+//        }
+//    }
 }
 
 void TestLoop::TestTaskDeinit() {}
@@ -71,16 +87,7 @@ void TestLoop::TimerReadTimeoutCallback() {
 }
 
 void TestLoop::ControlTaskListInit() {
-    // 初始化队列
-    commandList = parseXmlFile("./buildConfig.xml");
-    // 遍历结果
-    for (const CommandParams &cmd : commandList) {
-        qDebug() << "ID:" << cmd.id << " Type: " << cmd.commandType
-                 << " Slave IDs:" << cmd.slave_id << " - enable : " << cmd.enable
-                 << " - writeBuffer:" << cmd.write_buffer.toHex()
-                 << " - func:" << cmd.func << " - address"
-                 << QString::number(cmd.address, 16);
-    }
+
 }
 
 void TestLoop::onControlAllValveTool() {
@@ -164,14 +171,7 @@ QByteArray TestLoop::GT_BuildDeviceSwitch(QByteArray address) {
     bool ok = false;
     QByteArray ret;
     int value = address.toInt(&ok, 10); // slaveID
-    uint16_t regReadSwitchAddr = 0x4033;
-    // 遍历XML文件内容 获取到清除异常地址
-    for (int i = 0; i < commandList.size(); i++) {
-        if (commandList.at(i).commandType.contains("CommandReadValveStatus")) {
-            regReadSwitchAddr = commandList.at(i).address;
-            break;
-        }
-    }
+    uint16_t regReadSwitchAddr = REG_GT_SWITCH;
     ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x03, regReadSwitchAddr, NULL, 0,
                                           NULL);
     return ret;
@@ -228,14 +228,7 @@ QByteArray TestLoop::GT_BuildDeviceErrorClear(QByteArray address) {
     bool ok = false;
     QByteArray ret;
     int value = address.toInt(&ok, 10); // slaveID
-    uint16_t regClearAddress = 0x5080;
-    // 遍历XML文件内容 获取到清除异常地址
-    for (int i = 0; i < commandList.size(); i++) {
-        if (commandList.at(i).commandType.contains("CommandClearAllError")) {
-            regClearAddress = commandList.at(i).address;
-            break;
-        }
-    }
+    uint16_t regClearAddress = REG_GT_CLEAR_ERR;
     uint8_t resetErrorValue = 0x01 ;
     ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, regClearAddress, &resetErrorValue, 1,
                                           NULL);
@@ -288,40 +281,13 @@ QByteArray TestLoop::GT_SetSwitchModeInClosed(QByteArray address)
     bool ok = false;
     QByteArray ret;
     int value = address.toInt(&ok, 10); // slaveID
-    uint16_t reg = 0x5084;
-    // 遍历XML文件内容 获取到清除异常地址
-    for (int i = 0; i < commandList.size(); i++) {
-        if (commandList.at(i).commandType.contains("CommandSetSwitchMode")) {
-            reg = commandList.at(i).address;
-            break;
-        }
-    }
+    uint16_t reg = REG_GT_SET_SW_MODE;
     uint8_t setValue = 0x01 ;
     ret = GT_ModbusHandler.GT_ModbusWrite(value, 0x06, reg, &setValue, 1,
                                           NULL);
     return ret ;
 }
 
-void TestLoop::onTestBaseCmdAll() {
-    QThread::msleep(1000);
-    emit sendMethodToSerial(GT_BuildDeviceFactoryModeEnter("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(GT_BuildDeviceErrorClear("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(GT_BuildDeviceAirPressure("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(GT_BuildDeviceFahouPressure("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(GT_BuildDeviceFaqianPressure("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(GT_BuildDeviceSwitch("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(GT_BuildDeviceFactoryModeExit("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(CTL_BuildDeviceSwitchOpen("01"));
-    QThread::msleep(1000);
-    emit sendMethodToSerial(CTL_BuildDeviceSwitchClose("01"));
-}
 
 /**
  * @brief 读取所有压力值
@@ -461,80 +427,18 @@ void TestLoop::CTL_SetInputControlDeviceSwitchClose(QByteArray address) {
 }
 
 /**
- * @brief
- *        打开进气端阀门
+ * @brief 构造SlaveID与新的表
+ * @param slaveIDList
  */
-void TestLoop::LST_CommandOpenInputSwitch2KPa() {
-    for (int i = 0; i < commandList.size(); i++) {
-        if (commandList.at(i).commandType == "commandOpenInputValve") {
-            for (int j = 0; j < commandList.at(i).slave_id.size(); j++) {
-                emit logCurrentStep(
-                            "打开控制阀 " +
-                            QByteArray::number((commandList.at(i).slave_id.at(j)), 16));
-                CTL_SetInputControlDeviceSwitchOpen(
-                            QByteArray::number((commandList.at(i).slave_id.at(j)), 16));
-            }
-        }
-    }
-}
-
-void TestLoop::LST_CommandCloseInputSwitch2KPa()
+void TestLoop::BuildGTDeviceSlaveID( QList<DeviceInfo> deviceInfoList )
 {
-    for (int i = 0; i < commandList.size(); i++) {
-        if (commandList.at(i).commandType == "commandCloseInputValve") {
-            for (int j = 0; j < commandList.at(i).slave_id.size(); j++) {
-                emit logCurrentStep(
-                            "关闭控制阀 " +
-                            QByteArray::number((commandList.at(i).slave_id.at(j)), 16));
-                CTL_SetInputControlDeviceSwitchOpen(
-                            QByteArray::number((commandList.at(i).slave_id.at(j)), 16));
-            }
-        }
+    tasks.clear() ;
+    QList<uint8_t> gtSlaveIds ;
+    for( int i=0;i<deviceInfoList.size();i++ )
+    {
+        gtSlaveIds.append( deviceInfoList[i].slaveID.toUInt() ) ;
     }
-}
-
-
-void TestLoop::LST_CommandPollingOpenAllSwitch()
-{
-    for (int i = 0; i < commandList.size(); i++) {
-        if (commandList.at(i).commandType == "CommandOpenFireValveNED") {
-            for (int j = 0; j < commandList.at(i).slave_id.size(); j++) {
-                emit logCurrentStep(
-                            "模拟点火开阀 " +
-                            QByteArray::number((commandList.at(i).slave_id.at(j)), 16));
-                CTL_SetInputControlDeviceSwitchOpen(
-                            QByteArray::number((commandList.at(i).slave_id.at(j)), 16));
-                QThread::msleep(this->switchOpenTime);
-                CTL_SetInputControlDeviceSwitchClose(
-                            QByteArray::number((commandList.at(i).slave_id.at(j)), 16));
-                QThread::msleep(this->switchCloseTime);
-            }
-        }
-    }
-}
-
-/**
- * @brief 读取所有阀门状态
- * @param data
- */
-void TestLoop::LST_CommandPollReadSwitch(QList<DeviceInfo> data)
-{
-    // 先读取大气压
-    for (int i = 0; i < data.size(); i++) {
-        emit sendMethodToSerial(
-                    GT_BuildDeviceSwitch(data.at(i).slaveID)); // 发送大气压读取
-        QThread::msleep(50);
-    }
-}
-
-void TestLoop::LST_CommandPollSetSwitchMode(QList<DeviceInfo> data)
-{
-    // 先读取大气压
-    for (int i = 0; i < data.size(); i++) {
-        emit sendMethodToSerial(
-                    GT_SetSwitchModeInClosed(data.at(i).slaveID)); // 发送常开模式设置
-        QThread::msleep(50);
-    }
+    tasks = ModbusConfigParser::parseConfig("./buildConfig.xml", gtSlaveIds);
 }
 
 void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
@@ -565,26 +469,47 @@ void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
 
     emit logCurrentStep(
                 "========================= 点火开阀测试 BEGIN =========================");
-    // 执行2KPa阀门开启 发送打开阀门指令
-    LST_CommandOpenInputSwitch2KPa();
-    // 此时的管道供气2KPa，然后等待几秒钟时间，在这几秒钟准备执行清除异常
-    for (int i = 0; i < GAS_SMOOTH_TIME; i++) {
-        emit logCurrentStep("等待压力稳定 " + QByteArray::number(GAS_SMOOTH_TIME - i));
-        QThread::msleep(1000); // 等待1s
+//    // 清除所有异常信息
+//    GT_ResetDeviceErrorAll(data);
+//    // 读取所有阀门状态
+//    GT_ReadDeviceSwitchStatusAll( data );
+
+    // 打印所有任务信息
+    for (int i = 0; i < tasks.size(); i++) {
+        TaskInfo& task = tasks[i];
+        // 当没有从机ID的时候，导入设备ID
+        if( task.slave_ids.size() < 1 )
+        {
+            emit logCurrentStep( "++++++++++++++++++ ERROR 未输入SN号" );
+            return ;
+        }
+//        qDebug() << "\n执行ID" << task.id;
+        emit logCurrentStep("当前任务ID"+QByteArray::number(task.id)) ;
+        // 遍历所有循环执行 遍历从机ID
+        for( int i=0;i<task.slave_ids.size();i++ )
+        {
+            if( task.write_buffers.size() > 0 )
+            {
+                for( int j=0;j<task.write_buffers.size();j++ )
+                {
+                    uint8_t *write_buffer = new uint8_t[ task.write_buffers[j].size() ];
+                    memcpy(write_buffer, task.write_buffers[j].constData(), task.write_buffers[j].size());
+//                    qDebug()<<"slaveID : "<<task.slave_ids[i]<<"  func : "<<task.func<<"  writeBuffer : "<<task.write_buffers[j].toUpper() ;
+                    // 准备发出数据
+                    emit sendMethodToSerial( GT_ModbusHandler.GT_ModbusWrite( task.slave_ids[i] , task.func , task.address , write_buffer , task.write_buffers[j].size() , NULL ) ) ;
+                    delete[] write_buffer ;
+                    QThread::msleep( task.time_interval ) ; // 分别进行延迟处理
+                }
+            }
+            else if( task.read_length != 0 )
+            {
+//                qDebug()<<"slaveID : "<<task.slave_ids[i]<<"  func : "<<task.func ;
+                // 准备发出数据
+                emit sendMethodToSerial( GT_ModbusHandler.GT_ModbusWrite( task.slave_ids[i] , task.func , task.address , NULL , 00 , NULL ) ) ;
+                QThread::msleep( task.time_interval ) ;
+            }
+        }
     }
-    // 清除所有异常信息
-    GT_ResetDeviceErrorAll(data);
-    for (int i = 0; i < GAS_SMOOTH_TIME; i++) {
-        emit logCurrentStep("等待压力稳定 " + QByteArray::number(GAS_SMOOTH_TIME - i));
-        QThread::msleep(1000); // 等待1s
-    }
-    // 模拟点火开阀
-    LST_CommandPollingOpenAllSwitch();
-    QThread::msleep(2000);
-    // 读取所有阀门状态
-    GT_ReadDeviceSwitchStatusAll( data );
-    // 关闭进气端阀门
-    LST_CommandCloseInputSwitch2KPa();
 
 #if 0
     // 进气端B1,此时供气2KPa
@@ -615,11 +540,12 @@ void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
     emit logCurrentStep("关闭进气端阀门") ;
     CTL_SetInputControlDeviceSwitchClose(B1Addr) ;
 #else
-    // commandList
 
 #endif
     emit logCurrentStep(
                 "========================= 点火开阀测试 END =========================");
+
+    emit simulateIgnitionComplete();
 }
 
 void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data) {
@@ -657,11 +583,18 @@ void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data) {
 
 void TestLoop::DO_SubmitInfoToMES(QList<DeviceInfo> data) {
     for (DeviceInfo &device : data) {
-        QString sn = device.SN;
-        QString info = InfoParser::generateXmlString(sn, "OMFT");
-        emit logCurrentStep("GET -- " + info.toUtf8());
-        emit sendHttpParam( info );
-        QThread::msleep(200) ;
+        if( device.sw_status == true && device.low_press_status == true && device.over_press_status == true )
+        {
+            QString sn = device.SN;
+            QString info = InfoParser::generateXmlString(sn, "OMFT");
+            emit logCurrentStep("GET -- " + info.toUtf8());
+            emit sendHttpParam( info );
+            QThread::msleep(200) ;
+        }
+        else
+        {
+            emit logCurrentStep("不合格 SN-- " + device.SN);
+        }
     }
 }
 

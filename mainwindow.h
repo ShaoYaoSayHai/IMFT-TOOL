@@ -77,6 +77,8 @@ public slots:
   void onTableMapping();
   // 复位超压欠压点火开阀测试项目
   void onResetTestFlag();
+  // 点火开阀完成后对所有阀门状态是否到位进行检测
+  void checkAllSwitchStatus();
 
 private slots:
 

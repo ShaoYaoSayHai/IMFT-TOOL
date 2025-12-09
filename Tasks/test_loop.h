@@ -10,6 +10,7 @@
 #include "./FileReadWrite/filerw.h"
 #include "./HttpClient/infoparse.h"
 #include "./Modbus/gt_modbus.h"
+#include "./FileReadWrite/ModbusConfigParser.h"
 #include <QTimer>
 
 #define GAS_SMOOTH_TIME 3
@@ -40,7 +41,10 @@ public:
   QTimer *pxTimerReadTimeout = nullptr;
 
   // 桀桀桀 动态的函数 没见过吧
-  QList<CommandParams> commandList;
+//  QList<CommandParams> commandList;
+
+  // QList<TaskInfo> tasks
+  QList<TaskInfo> tasks ;
 
 private:
 public slots:
@@ -80,10 +84,6 @@ public slots:
   void GT_EnterFactoryModeAll(QList<DeviceInfo> list);
   // 全部加糖设备退出产测模式
   void GT_ExitFactoryModeAll(QList<DeviceInfo> list);
-
-
-  // 测试所有基础指令
-  void onTestBaseCmdAll();
   // 执行所有的压力读取
   void GT_ReadListAllPressure(QList<DeviceInfo> list);
   // 读取所有阀门状态
@@ -110,18 +110,8 @@ public slots:
   // 关闭进气端阀门
   void CTL_SetInputControlDeviceSwitchClose(QByteArray address);
 
-  // 优化后代码
-  // ===================================================================
-  // ====================== 打开2KPa阀门 ================================
-  void LST_CommandOpenInputSwitch2KPa();
-  // ====================== 关闭2KPa阀门 ===============================
-  void LST_CommandCloseInputSwitch2KPa();
-  // ====================== 轮询打开所有阀门 =============================
-  void LST_CommandPollingOpenAllSwitch(void);
-  // 所有阀门状态
-  void LST_CommandPollReadSwitch( QList<DeviceInfo> data );
-  // ====================== 设置常开模式 ================================
-  void LST_CommandPollSetSwitchMode( QList<DeviceInfo> data );
+  // 构造即将输入的slaveID
+  void BuildGTDeviceSlaveID( QList<DeviceInfo> deviceInfoList );
 
   // ====================== 欠压流程执行 =================================
   void DO_TaskCheckLowPressure(QList<DeviceInfo> data);
@@ -144,6 +134,8 @@ signals:
   void logCurrentStep(QByteArray data);
   // 获取到新的HTTP参数 发送给主线程
   void sendHttpParam( const QString data );
+  // 点火开阀执行完毕
+
 };
 
 #endif // TESTTASK_H

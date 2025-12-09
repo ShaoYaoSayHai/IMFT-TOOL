@@ -20,6 +20,11 @@ typedef struct DeviceInfo {
   int airPressUpdateFlag;
   int infPressUpdateFlag;
   int endPressUpdateFlag;
+
+  bool sw_status ;
+  bool low_press_status ;
+  bool over_press_status ;
+
 } DeviceInfo;
 
 typedef struct DoTestType {
@@ -33,7 +38,8 @@ typedef struct DoTestType {
 #define REG_GT_SWITCH (0x4033)
 #define REG_GT_READSN (0x4045)
 #define REG_GT_FACTORY (0x4047)
-#define REG_GT_CLEAR (0x4060)
+#define REG_GT_CLEAR_ERR (0x5080)
+#define REG_GT_SET_SW_MODE (0x5084)
 
 // 声明元类型
 Q_DECLARE_METATYPE(DeviceInfo)

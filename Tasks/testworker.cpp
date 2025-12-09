@@ -60,6 +60,19 @@ void TestWorker::onThreadFinished() {
   qDebug() << "testWorker finish begin ===================";
 }
 
+void TestWorker::onBuildTaskInfo(QList<DeviceInfo> deviceList)
+{
+    // BuildGTDeviceSlaveID
+    if (deviceList.isEmpty()) {
+      return;
+    }
+    if (pxTestLoop) {
+      QMetaObject::invokeMethod(pxTestLoop, "BuildGTDeviceSlaveID",
+                                Qt::QueuedConnection, // 使用队列连接确保线程安全
+                                Q_ARG(QList<DeviceInfo>, deviceList));
+    }
+}
+
 void TestWorker::onTakeStep1Test(QList<DeviceInfo> deviceList) {
   // 为空返回
   if (deviceList.isEmpty()) {
@@ -81,13 +94,6 @@ void TestWorker::onTakeStep1Test(QList<DeviceInfo> deviceList) {
     QMetaObject::invokeMethod(pxTestLoop, "GT_ReadListAllPressure",
                               Qt::QueuedConnection, // 使用队列连接确保线程安全
                               Q_ARG(QList<DeviceInfo>, deviceList));
-  }
-}
-
-void TestWorker::onTaskBaseCommondTest() {
-  if (pxTestLoop) {
-    QMetaObject::invokeMethod(pxTestLoop, "onTestBaseCmdAll",
-                              Qt::QueuedConnection);
   }
 }
 
