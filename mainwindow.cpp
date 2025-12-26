@@ -43,7 +43,6 @@ MainWindow::MainWindow(QWidget *parent)
   ui->tableWidget->clearContents() ; // 清除所有Item，保留行数
   ui->tableWidget->setItem(0 , 0 , new QTableWidgetItem("HAHAH 00000")) ;
   ui->tableWidget->setItem(1 , 0 , new QTableWidgetItem("JJJJJ 11111")) ;
-
   pxTable->SetCellItem( 1 , 1 , "彻底失败" , TableControl::RED );
 }
 
