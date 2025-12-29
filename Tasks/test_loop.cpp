@@ -469,11 +469,6 @@ void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
 
     emit logCurrentStep(
                 "========================= 点火开阀测试 BEGIN =========================");
-//    // 清除所有异常信息
-//    GT_ResetDeviceErrorAll(data);
-//    // 读取所有阀门状态
-//    GT_ReadDeviceSwitchStatusAll( data );
-
     // 打印所有任务信息
     for (int i = 0; i < tasks.size(); i++) {
         TaskInfo& task = tasks[i];

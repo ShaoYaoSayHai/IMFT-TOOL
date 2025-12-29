@@ -12,6 +12,7 @@
 #include <QString>
 #include <functional>
 #include "config/version_config.h"
+#include "./infoparse.h"
 
 class HttpClient : public QObject
 {
@@ -44,7 +45,7 @@ public:
 
     QByteArray getFinishedCallbackMsg();
 
-    void recvMessageCallback( QByteArray &jsonPayload );
+    void MesCheckCallbackParse( QByteArray &jsonPayload );
 
 signals:
 
@@ -65,6 +66,7 @@ private slots:
 
 
 
+    void error_happen_call_back(QString msg);
 private:
     QNetworkAccessManager *m_manager = nullptr;
 
