@@ -613,7 +613,7 @@ QString parseLoginResponse(const QString& jsonResponse) {
 }
 
 
-bool parseStaIsOmft(const QString& xml, QString* outSta = nullptr)
+bool parseStaIsOmft(const QString& xml, QString* outSta)
 {
     QXmlStreamReader reader(xml);
 

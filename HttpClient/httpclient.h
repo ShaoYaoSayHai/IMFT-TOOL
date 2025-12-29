@@ -11,6 +11,7 @@
 #include <QMap>
 #include <QString>
 #include <functional>
+#include "config/version_config.h"
 
 class HttpClient : public QObject
 {
@@ -46,7 +47,13 @@ public:
     void recvMessageCallback( QByteArray &jsonPayload );
 
 signals:
+
+#if 1
     void requestFinished(QByteArray data);
+#else
+    // 修改后结果
+    void requestFinished(HttpClient::ReqType type, const QByteArray& response);
+#endif
     void requestFailed(const QString &errorString);
 
     void sigRequestDataParser(QByteArray);
@@ -55,6 +62,8 @@ signals:
 
 private slots:
     void onFinished(QNetworkReply *reply);
+
+
 
 private:
     QNetworkAccessManager *m_manager = nullptr;
