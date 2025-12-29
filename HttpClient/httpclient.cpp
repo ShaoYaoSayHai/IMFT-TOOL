@@ -38,7 +38,6 @@ void HttpClient::doPost(const QUrl &url,
                         const QByteArray &body,
                         const QString &contentType)
 {
-//    qDebug()<<"进入POST" ;
     QNetworkRequest request(url);
     // request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setHeader(QNetworkRequest::ContentTypeHeader, contentType);

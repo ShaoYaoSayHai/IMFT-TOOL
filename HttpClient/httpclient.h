@@ -21,6 +21,15 @@ public:
 
     bool updateFlag = false ;
 
+    enum class ReqType {
+        Unknown = 0,
+        MesCheck,
+        MesUpdate,
+        GenericGet,
+        GenericPost
+    };
+    Q_ENUM(ReqType)
+
     // 触发 GET 请求
     void doGet(const QUrl &url);
 
@@ -42,7 +51,7 @@ signals:
 
     void sigRequestDataParser(QByteArray);
 
-//    void errorHappend(  );
+    //    void errorHappend(  );
 
 private slots:
     void onFinished(QNetworkReply *reply);
