@@ -15,7 +15,7 @@ HttpClient::HttpClient(QObject *parent)
     QString checkPath = readInternetMesConfigInfo( "./buildConfig.xml" , "MesPathCheck" ) ;
     QString updatePath = readInternetMesConfigInfo( "./buildConfig.xml" , "MesPathUpdate" ) ;
 
-//    qDebug()<<"ip : "<<ip_address<<" port : "<<port << " checkPath : "<<checkPath<<" updatePath : "<<updatePath ;
+    //    qDebug()<<"ip : "<<ip_address<<" port : "<<port << " checkPath : "<<checkPath<<" updatePath : "<<updatePath ;
 }
 
 HttpClient::~HttpClient()
@@ -31,14 +31,13 @@ void HttpClient::doGet(const QUrl &url)
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     m_manager->get(request);
-//    qDebug() << "Sending login request to:" << url.toString();
+    //    qDebug() << "Sending login request to:" << url.toString();
 }
 
 void HttpClient::doPost(const QUrl &url,
                         const QByteArray &body,
                         const QString &contentType)
 {
-//    qDebug()<<"进入POST" ;
     QNetworkRequest request(url);
     // request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setHeader(QNetworkRequest::ContentTypeHeader, contentType);
@@ -77,7 +76,7 @@ QByteArray HttpClient::getFinishedCallbackMsg()
  * @brief 拼接出update所需要的信息
  * @param jsonPayload
  */
-void HttpClient::recvMessageCallback( QByteArray &jsonPayload )
+void HttpClient::MesCheckCallbackParse( QByteArray &jsonPayload )
 {
     QMap<QString , QString> map = InfoParser::JsonPayloadParse( jsonPayload ) ;
     if( !map.isEmpty() && map.size() == 3 )
@@ -87,12 +86,22 @@ void HttpClient::recvMessageCallback( QByteArray &jsonPayload )
         const QString iccid = map.value(QStringLiteral("ICCID"));
         QString msg = buildInputPayload( map.value(QStringLiteral("SN")) , "OMFT" , map.value("IMEI1") , map.value(QStringLiteral("ICCID")) );
         qDebug()<<"拼接内容 - "<<msg ;
-        this->postMesUpdate( msg ); // 更新到最后
+        this->postMesUpdate( msg ); // 更新
+    }
+}
+
+void HttpClient::error_happen_call_back(QString msg)
+{
+    if( msg.contains("不匹配") )
+    {
+        emit requestFinished(msg.toUtf8()) ;
     }
 }
 
 void HttpClient::onFinished(QNetworkReply *reply)
 {
+    // 获取URL
+    const QString path = reply->url().path();  // 例如 /WebService1.asmx/MesCheck
     if (reply->error() == QNetworkReply::NoError)
     {
         // 读取响应数据
@@ -100,10 +109,25 @@ void HttpClient::onFinished(QNetworkReply *reply)
         QString responseString = QString::fromUtf8(response);
         qDebug() << "Login successful! Response:" << responseString;
         this->msg = responseString.toUtf8() ;
-        recvMessageCallback( this->msg ); // 拼接出结果
-        // 解析异常
-//        QString ret = parseLoginResponse( responseString );
-//        qDebug()<<"返回值 : "<<ret ;
+
+        // 2025年12月30日 新增代码
+        if (path.endsWith("/MesCheck")) {
+            QString errorMsg ;
+            if( parseRetmsgPassFromJson( responseString , &errorMsg ) != false )
+            {
+                MesCheckCallbackParse(this->msg);
+            }
+            else
+            {
+                qDebug()<<"MesCheck Error : "<<errorMsg ;
+                error_happen_call_back(errorMsg);
+
+            }
+
+        } else if (path.endsWith("/MesUpdate")) {
+            // 解析 update 返回
+        }
+
         emit requestFinished( response );
     }
     else

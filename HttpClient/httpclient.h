@@ -11,6 +11,8 @@
 #include <QMap>
 #include <QString>
 #include <functional>
+#include "config/version_config.h"
+#include "./infoparse.h"
 
 class HttpClient : public QObject
 {
@@ -20,6 +22,15 @@ public:
     ~HttpClient();
 
     bool updateFlag = false ;
+
+    enum class ReqType {
+        Unknown = 0,
+        MesCheck,
+        MesUpdate,
+        GenericGet,
+        GenericPost
+    };
+    Q_ENUM(ReqType)
 
     // 触发 GET 请求
     void doGet(const QUrl &url);
@@ -34,19 +45,28 @@ public:
 
     QByteArray getFinishedCallbackMsg();
 
-    void recvMessageCallback( QByteArray &jsonPayload );
+    void MesCheckCallbackParse( QByteArray &jsonPayload );
 
 signals:
+
+#if 1
     void requestFinished(QByteArray data);
+#else
+    // 修改后结果
+    void requestFinished(HttpClient::ReqType type, const QByteArray& response);
+#endif
     void requestFailed(const QString &errorString);
 
     void sigRequestDataParser(QByteArray);
 
-//    void errorHappend(  );
+    //    void errorHappend(  );
 
 private slots:
     void onFinished(QNetworkReply *reply);
 
+
+
+    void error_happen_call_back(QString msg);
 private:
     QNetworkAccessManager *m_manager = nullptr;
 

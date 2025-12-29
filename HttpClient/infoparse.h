@@ -3,6 +3,10 @@
 #include <QObject>
 #include <QByteArray>
 #include <QString>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QXmlStreamReader>
+#include <QDebug>
 
 class DeviceInfo;
 
@@ -30,3 +34,6 @@ QString buildInputPayload(const QString &sn,
                           const QString &sta,
                           const QString &imei1,
                           const QString &iccid) ;
+
+
+bool parseRetmsgPassFromJson(const QString& jsonString, QString* outRetmsg) ;

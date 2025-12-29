@@ -147,8 +147,8 @@ bool parseXml(const QString& xmlString, QString& snValue, QString& staValue) {
 
 // 替换SN和STA的值
 QString replaceAttributes(const QString& xmlString,
-                                 const QString& newSN = QString(),
-                                 const QString& newSTA = QString()) {
+                          const QString& newSN = QString(),
+                          const QString& newSTA = QString()) {
     QDomDocument doc;
     if (!doc.setContent(xmlString)) {
         qWarning() << "Failed to parse XML string";
@@ -183,7 +183,7 @@ QString InfoParser::generateXmlString(const QString& sn, const QString& sta) {
     writer.setAutoFormatting(false);
 
     // 开始写入XML
-//    writer.writeStartDocument();
+    //    writer.writeStartDocument();
     writer.writeStartElement("root");
     writer.writeStartElement("info");
 
@@ -194,11 +194,56 @@ QString InfoParser::generateXmlString(const QString& sn, const QString& sta) {
     // 结束元素
     writer.writeEndElement(); // 结束info元素
     writer.writeEndElement(); // 结束root元素
-//    writer.writeEndDocument();
+    //    writer.writeEndDocument();
 
     return xmlString;
 }
 
 
+
+
+bool parseRetmsgPassFromJson(const QString& jsonString, QString* outRetmsg)
+{
+    if (outRetmsg) outRetmsg->clear();
+
+    // 1) 解析 JSON
+    QJsonParseError jerr;
+    const QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8(), &jerr);
+    if (jerr.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "[parseRetmsgPassFromJson] JSON parse error:" << jerr.errorString();
+        return false;
+    }
+
+    const QJsonObject obj = doc.object();
+    const QJsonValue dVal = obj.value(QStringLiteral("d"));
+    if (!dVal.isString()) {
+        qWarning() << "[parseRetmsgPassFromJson] JSON field 'd' missing or not a string";
+        return false;
+    }
+
+    const QString xml = dVal.toString();
+
+    // 2) 解析 XML，找到 <info> 的 RETMSG 属性
+    QXmlStreamReader reader(xml);
+    while (!reader.atEnd()) {
+        reader.readNext();
+
+        if (reader.isStartElement() && reader.name() == QLatin1String("info")) {
+            const QString retmsg = reader.attributes().value(QLatin1String("RETMSG")).toString().trimmed();
+
+            if (outRetmsg) *outRetmsg = retmsg;
+
+            // 3) 判断 PASS
+            return (retmsg == QLatin1String("PASS"));
+        }
+    }
+
+    if (reader.hasError()) {
+        qWarning() << "[parseRetmsgPassFromJson] XML parse error:" << reader.errorString();
+    } else {
+        qWarning() << "[parseRetmsgPassFromJson] <info> element not found in XML";
+    }
+    return false;
+}
 
 
