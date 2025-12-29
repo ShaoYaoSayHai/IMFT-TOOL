@@ -2,7 +2,7 @@
 #include <QDebug>
 
 TableControl::TableControl( QTableWidget *pxTable , QObject *parent) : QObject(parent)
-    , table( pxTable )
+  , table( pxTable )
 {
 
 }
@@ -11,35 +11,43 @@ TableControl::~TableControl()
 {
 }
 
-void TableControl::SetCellItem(int row, int col, QByteArray qbyData , TABLE_COLOR color )
+void TableControl::SetCellItem(int row, int col, const QByteArray& qbyData, TABLE_COLOR color)
 {
-//    item = table->item(( row -1 ) , col-1) ;
-//    qDebug()<<"是否是TRUE : "<<(item ? 1 : 0) <<qbyData ;
-//    item->setText(qbyData) ;
-    QTableWidgetItem *item = table->takeItem( row - 1 , col - 1 );
-    if( item )
-    delete item ;
-    qDebug()<<"进入到删除ITEM之后" ;
-    QString writeMsg ;
-    writeMsg.prepend( qbyData ) ;
-    table->setItem( row - 1 , col - 1 , new QTableWidgetItem( writeMsg ) );
-    qDebug()<<"写入ITEM" ;
-    QTableWidgetItem *newItem = table->item( row -1 , col - 1 ) ;
-    qDebug()<<"获取到newItem" ;
-    if( color == GREEN )
-    {
-        newItem->setBackground(QColor(0,255,0)); // 设置绿色
+    const int r = row - 1;
+    const int c = col - 1;
+
+    // 1) 越界保护，避免潜在崩溃
+    if (r < 0 || c < 0 || r >= table->rowCount() || c >= table->columnCount()) {
+        qWarning() << "SetCellItem out of range:" << row << col;
+        return;
     }
-    else if(color == RED)
-    {
-        newItem->setBackground(QColor(255,0,0)); // 设置红色
+
+    // 2) 复用已有 item
+    QTableWidgetItem* item = table->item(r, c);
+    if (!item) {
+        item = new QTableWidgetItem();
+        table->setItem(r, c, item); // table 接管生命周期
     }
-    else
-    {
-        newItem->setBackground(QColor(255,255,255)); // 设置红色
+
+    // 3) 设置文本（注意编码）
+    // 若 qbyData 是 UTF-8 文本：
+    item->setText(QString::fromUtf8(qbyData));
+    // 若是本地编码（GBK等），需要用 QTextCodec 或 fromLocal8Bit：
+    // item->setText(QString::fromLocal8Bit(qbyData));
+
+    // 4) 设置背景色
+    switch (color) {
+    case GREEN: item->setBackground(QColor(0, 255, 0)); break;
+    case RED:   item->setBackground(QColor(255, 0, 0)); break;
+    default:    item->setBackground(QColor(255, 255, 255)); break;
     }
-    qDebug()<<"NEW ITEM 背景色写入完成" ;
 }
+
+QTableWidget *TableControl::GetTableWidget()
+{
+    return table ;
+}
+
 
 void TableControl::ClearAllItems()
 {
@@ -64,6 +72,7 @@ void TableControl::ClearAllItems()
 }
 
 
+#if ( VERSION < VERSION_BLD(1,4) )
 int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareString) {
     // 检查表格控件是否有效
     int searchLine = compareString.toUInt() ;
@@ -95,10 +104,63 @@ int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareStr
             return row; // 返回匹配的行号
         }
         if ((item->text().mid( (item->text().size()-2) , (item->text().size()))).contains(compareString)) {
-//            qDebug() << "找到匹配项，行号：" << row << "，内容：" << item->text();
             return row; // 返回匹配的行号
         }
     }
     qDebug() << "未找到与'" << compareString << "'匹配的内容";
     return -1; // 没有找到匹配项
 }
+
+#else
+int findFirstColumnByLast2(QTableWidget* tableWidget, QString compareStringLast2)
+{
+    if (!tableWidget) {
+        qWarning() << "findFirstColumnByLast2: tableWidget is null";
+        return -1;
+    }
+
+    const int rowCount = tableWidget->rowCount();
+    if (rowCount <= 0) {
+        return -1;
+    }
+
+    // 1) 规范化输入：去空格
+    compareStringLast2 = compareStringLast2.trimmed();
+    if (compareStringLast2.isEmpty()) {
+        return -1;
+    }
+
+    // 2) 如果你确定输入永远是两位，这段可保留为强校验：
+    //    若输入可能是 "3" 而你希望当作 "03"，则做左补零。
+    if (compareStringLast2.size() == 1 && compareStringLast2[0].isDigit()) {
+        compareStringLast2.prepend('0');  // "3" -> "03"
+    }
+
+    // 若输入仍不是两位，按你的业务选择：直接失败或截取最后两位
+    if (compareStringLast2.size() != 2) {
+        qWarning() << "findFirstColumnByLast2: compareStringLast2 length is not 2:" << compareStringLast2;
+        return -1;
+        // 或者：compareStringLast2 = compareStringLast2.right(2);
+    }
+
+    // 3) 遍历第一列，取完整 SN 的末尾两位
+    for (int row = 0; row < rowCount; ++row) {
+        QTableWidgetItem* item = tableWidget->item(row, 0);
+        if (!item) {
+            continue;
+        }
+
+        const QString sn = item->text().trimmed();
+        if (sn.size() < 2) {
+            continue;
+        }
+
+        const QString last2 = sn.right(2); // 安全且语义明确
+        if (last2 == compareStringLast2) {
+            return row;
+        }
+    }
+
+    return -1;
+}
+#endif

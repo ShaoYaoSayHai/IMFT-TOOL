@@ -52,6 +52,7 @@ HEADERS += \
     Table/tablecontrol.h \
     Tasks/test_loop.h \
     Tasks/testworker.h \
+    config/version_config.h \
     hexprintf.h \
     mainwindow.h
 

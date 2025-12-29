@@ -17,6 +17,8 @@
 #include "./HttpClient/httpclient.h"
 #include "./HttpClient/infoparse.h"
 
+#include <QMessageBox>
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -92,5 +94,7 @@ private slots:
   void on_pushButton_2_clicked();
   void on_pushButton_4_clicked();
   void on_pushButton_7_clicked();
+
+  void on_pushButton_8_clicked();
 };
 #endif // MAINWINDOW_H

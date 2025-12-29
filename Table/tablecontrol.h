@@ -9,6 +9,7 @@
 
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include "config/version_config.h"
 
 class TableControl : public QObject {
   Q_OBJECT
@@ -31,12 +32,18 @@ private:
 
 public slots:
 
-  void SetCellItem(int row, int col, QByteArray qbyData ,TABLE_COLOR color );
+//  void SetCellItem(int row, int col, QByteArray qbyData ,TABLE_COLOR color );
 
   void ClearAllItems();
+  void SetCellItem(int row, int col, const QByteArray &qbyData, TABLE_COLOR color);
+
+    QTableWidget *GetTableWidget();
+
 signals:
 };
 
-int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareString) ;
+//int findFirstColumnMatchRow(QTableWidget* tableWidget, const QString& compareString) ;
+
+int findFirstColumnByLast2(QTableWidget* tableWidget, QString compareStringLast2) ;
 
 #endif // TABLECONTROL_H
