@@ -61,12 +61,12 @@ signals:
 
     //    void errorHappend(  );
 
+    void MES_ResultReload( QString sn , bool status );
+
 private slots:
     void onFinished(QNetworkReply *reply);
-
-
-
     void error_happen_call_back(QString msg);
+    void receive_net_results(QByteArray &data);
 private:
     QNetworkAccessManager *m_manager = nullptr;
 

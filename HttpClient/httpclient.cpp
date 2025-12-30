@@ -82,11 +82,8 @@ void HttpClient::MesCheckCallbackParse( QByteArray &jsonPayload )
     if( !map.isEmpty() && map.size() == 3 )
     {
         const QString sn    = map.value(QStringLiteral("SN"));
-        const QString imei1 = map.value(QStringLiteral("IMEI1"));
-        const QString iccid = map.value(QStringLiteral("ICCID"));
-        QString msg = buildInputPayload( map.value(QStringLiteral("SN")) , "OMFT" , map.value("IMEI1") , map.value(QStringLiteral("ICCID")) );
-        qDebug()<<"拼接内容 - "<<msg ;
-        this->postMesUpdate( msg ); // 更新
+        const QString update_info = buildInputXmlBytes( sn , "OMFT" , "PASS" );
+        this->postMesUpdate( update_info ); // 更新
     }
 }
 
@@ -96,6 +93,29 @@ void HttpClient::error_happen_call_back(QString msg)
     {
         emit requestFinished(msg.toUtf8()) ;
     }
+    else
+    {
+        emit requestFinished("未知错误 : "+msg.toUtf8()) ;
+    }
+}
+
+void HttpClient::receive_net_results( QByteArray &data )
+{
+    QString xml, err;
+    if( extractXmlFromServerResp( data , &xml , &err ) )
+    {
+        qDebug().noquote() << "Decoded XML:" << xml;
+        emit requestFinished( "MES PASS :: "+xml.toUtf8() );
+    }
+    else
+    {
+        qDebug().noquote() << "Decode failed:" << err;
+        emit requestFinished( "MES FAIL :: "+err.toUtf8() );
+    }
+
+    ParseResult res = parseSnAndStatus( xml.toUtf8() ) ;
+    // 信号量，用作修改UI界面
+    emit MES_ResultReload( res.sn , res.ok );
 }
 
 void HttpClient::onFinished(QNetworkReply *reply)
@@ -107,7 +127,6 @@ void HttpClient::onFinished(QNetworkReply *reply)
         // 读取响应数据
         QByteArray response = reply->readAll();
         QString responseString = QString::fromUtf8(response);
-        qDebug() << "Login successful! Response:" << responseString;
         this->msg = responseString.toUtf8() ;
 
         // 2025年12月30日 新增代码
@@ -115,20 +134,24 @@ void HttpClient::onFinished(QNetworkReply *reply)
             QString errorMsg ;
             if( parseRetmsgPassFromJson( responseString , &errorMsg ) != false )
             {
+                qDebug()<<"JSON解析通过 MES CHECK OK" ;
                 MesCheckCallbackParse(this->msg);
+                receive_net_results( response );
             }
             else
             {
                 qDebug()<<"MesCheck Error : "<<errorMsg ;
                 error_happen_call_back(errorMsg);
-
+                ParseResult res = parseSnAndStatus( responseString ) ;
+                // 信号量，用作修改UI界面
+                emit MES_ResultReload( res.sn , res.ok );
             }
 
-        } else if (path.endsWith("/MesUpdate")) {
-            // 解析 update 返回
         }
-
-        emit requestFinished( response );
+        else if (path.endsWith("/MesUpdate")) {
+            // 解析 update 返回
+            receive_net_results( response );
+        }
     }
     else
     {

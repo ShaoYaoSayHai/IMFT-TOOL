@@ -26,18 +26,28 @@ MainWindow::MainWindow(QWidget *parent)
     GUI_TableInit();
 
     // HTTP 客户端测试
-//      pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251120_10006\" STA=\"OMFT\"/></root>" );
+    //    pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251205_10015\" STA=\"OMFT\"/></root>" );
+    //    pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251120_10006\" STA=\"OMFT\"/></root>" );
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::sendHttpParam , pxHttpClient , &HttpClient::postMesCheck );
     connect( pxHttpClient , &HttpClient::requestFinished , pxBrowserLogs , &Logs::LogBrowserWrite );
+    connect( pxHttpClient , &HttpClient::MES_ResultReload , this , [=]( QString sn , bool status ){
+        int row = findFirstColumnByLast2( pxTable->GetTableWidget() , sn.right(2)) ;
+        if( status )
+        {
+            pxTable->SetCellItem( row+1 , 1 , sn.toUtf8() , TableControl::GREEN );
+        }
+        else
+        {
+            pxTable->SetCellItem( row+1 , 1 , sn.toUtf8() , TableControl::RED );
+        }
+    } );
 
-    //  ui->tableWidget->setItem(0 , 0 , new QTableWidgetItem("CE02_251205_10151")) ;
-    //  ui->tableWidget->setItem(1 , 0 , new QTableWidgetItem("CE02_251205_10015")) ;
-    pxTable->SetCellItem( 1 , 1 , "CE02_251205_10151" , TableControl::GREEN );
-    pxTable->SetCellItem( 2 , 1 , "CE02_251205_10511" , TableControl::GREEN );
-    qDebug()<<"匹配的行 : "<<findFirstColumnByLast2( ui->tableWidget , "51" ) ;
-
-    QTableWidget* w = pxTable->GetTableWidget();
-    qDebug()<<"当前的最大行数 : "<<w->rowCount() ;
+    //    pxTable->SetCellItem( 1 , 1 , "CE02_251205_10151" , TableControl::WHITE );
+    //    pxTable->SetCellItem( 2 , 1 , "CE02_251205_10015" , TableControl::WHITE );
+    //    pxTable->SetCellItem( 3 , 1 , "CE02_251120_10006" , TableControl::WHITE );
+    //    qDebug()<<"匹配的行 : "<<findFirstColumnByLast2( ui->tableWidget , "51" ) ;
+    //    QTableWidget* w = pxTable->GetTableWidget();
+    //    qDebug()<<"当前的最大行数 : "<<w->rowCount() ;
 
     ui->pushButton_8->setVisible(false) ;
 }
@@ -498,6 +508,18 @@ void MainWindow::on_pushButton_4_clicked()
     //    QString info = InfoParser::generateXmlString("CE02_251120_10006" , "OMFT") ;
     //    pxHttpClient->postMesCheck( info ) ;
     pxTestWorkerHandler->OMFT_SubmitTestResultToMES(GT_DeviceList) ;
+
+    for ( DeviceInfo device:GT_DeviceList ) {
+        if( device.sw_status == true && device.low_press_status == true && device.over_press_status == true )
+        {
+        }
+        else
+        {
+            QString sn = device.SN;
+            int row = findFirstColumnByLast2( pxTable->GetTableWidget() , sn.right(2) ) ;
+            pxTable->SetCellItem( row +1 , 1 , sn.toUtf8() ,TableControl::RED ) ;
+        }
+    }
 }
 
 void MainWindow::on_pushButton_7_clicked()

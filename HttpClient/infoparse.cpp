@@ -7,6 +7,7 @@
 #include <QMap>
 #include <QDomDocument>
 #include <QXmlStreamReader>
+#include <QBuffer>
 #include <QDebug>
 
 InfoParser::InfoParser(QObject *parent)
@@ -246,4 +247,108 @@ bool parseRetmsgPassFromJson(const QString& jsonString, QString* outRetmsg)
     return false;
 }
 
+QByteArray buildInputXmlBytes(const QString& sn,
+                              const QString& sta,
+                              const QString& result /* PASS/FAIL */)
+{
+    QByteArray xmlBytes;
+    QBuffer buf(&xmlBytes);
+    buf.open(QIODevice::WriteOnly);
 
+    QXmlStreamWriter xw(&buf);
+    xw.setAutoFormatting(false);
+
+    xw.writeStartElement("root");
+    xw.writeEmptyElement("info");
+
+    xw.writeAttribute("SN", sn);
+    xw.writeAttribute("STA", sta);
+    xw.writeAttribute("RESULT", result);
+
+    xw.writeEndElement(); // root
+    return xmlBytes;
+}
+
+
+bool extractXmlFromServerResp(const QByteArray& respJsonBytes,
+                              QString* outXml,
+                              QString* outErr)
+{
+    if (outXml) outXml->clear();
+    if (outErr) outErr->clear();
+
+    QJsonParseError pe{};
+    const QJsonDocument doc = QJsonDocument::fromJson(respJsonBytes, &pe);
+    if (pe.error != QJsonParseError::NoError || !doc.isObject()) {
+        if (outErr) *outErr = QStringLiteral("JSON parse failed: %1").arg(pe.errorString());
+        return false;
+    }
+
+    const QJsonObject obj = doc.object();
+    const QJsonValue v = obj.value(QStringLiteral("d"));
+    if (!v.isString()) {
+        if (outErr) *outErr = QStringLiteral("Field 'd' missing or not a string.");
+        return false;
+    }
+
+    // 关键点：这里拿到的是“已解码的真实字符串”，\u003c 会变成 <，\" 会变成 "
+    const QString xml = v.toString();
+    if (outXml) *outXml = xml;
+    return true;
+}
+
+
+
+
+ParseResult parseSnAndStatus(const QString& input)
+{
+    ParseResult r;
+    const QString s = input.trimmed();
+
+    // ========= 1) 尝试从任意位置提取 XML 段 =========
+    // 你的成功字符串前面有 "MES PASS ::" 前缀，所以不能用 startsWith('<')
+    int xmlPos = s.indexOf(QStringLiteral("<root"));
+    if (xmlPos < 0) {
+        xmlPos = s.indexOf(QStringLiteral("<info")); // 兜底：有时可能没有 root
+    }
+
+    if (xmlPos >= 0) {
+        const QString xml = s.mid(xmlPos).trimmed();
+
+        QXmlStreamReader xr(xml);
+        while (!xr.atEnd()) {
+            xr.readNext();
+            if (xr.isStartElement() && xr.name() == QStringLiteral("info")) {
+                const auto attrs = xr.attributes();
+
+                r.sn = attrs.value(QStringLiteral("SN")).toString();
+                r.retmsg = attrs.value(QStringLiteral("RETMSG")).toString();
+
+                // 规则：仅 RETMSG == PASS 才成功，否则一律 FAIL
+                r.ok = (r.retmsg.compare(QStringLiteral("PASS"), Qt::CaseInsensitive) == 0);
+                r.status = r.ok ? QStringLiteral("PASS") : QStringLiteral("FAIL");
+                return r;
+            }
+        }
+
+        // XML 存在但解析失败/没找到 info：按失败处理
+        r.ok = false;
+        r.status = QStringLiteral("FAIL");
+        r.rawError = xr.hasError() ? xr.errorString()
+                                   : QStringLiteral("XML present but missing <info> element.");
+        return r;
+    }
+
+    // ========= 2) 非 XML：解析失败文本中的 SN =========
+    // 适配："[time] SN:CE02_...xxx" / "SN=..." / "SN：..."
+    static const QRegularExpression reSn(R"(SN\s*[:=：]\s*([A-Za-z0-9_]+))");
+    const QRegularExpressionMatch m = reSn.match(s);
+    if (m.hasMatch()) {
+        r.sn = m.captured(1);
+    }
+
+    r.ok = false;
+    r.status = QStringLiteral("FAIL");
+    r.rawError = s;
+    return r;
+}

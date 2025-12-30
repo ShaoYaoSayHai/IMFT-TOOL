@@ -7,6 +7,16 @@
 #include <QJsonObject>
 #include <QXmlStreamReader>
 #include <QDebug>
+#include <QRegularExpression>
+
+struct ParseResult
+{
+    bool ok = false;        // true => PASS；false => FAIL
+    QString sn;             // 提取到的 SN（可能为空）
+    QString status;         // "PASS" or "FAIL"
+    QString retmsg;         // XML里的RETMSG（如有）
+    QString rawError;       // 非XML场景下的原始错误文本（如有）
+};
 
 class DeviceInfo;
 
@@ -37,3 +47,15 @@ QString buildInputPayload(const QString &sn,
 
 
 bool parseRetmsgPassFromJson(const QString& jsonString, QString* outRetmsg) ;
+
+QByteArray buildInputXmlBytes(const QString& sn,
+                              const QString& sta,
+                              const QString& result /* PASS/FAIL */) ;
+
+
+bool extractXmlFromServerResp(const QByteArray& respJsonBytes,
+                              QString* outXml,
+                              QString* outErr) ;
+
+// 解析MES CHECK的返回值
+ParseResult parseSnAndStatus(const QString& input) ;

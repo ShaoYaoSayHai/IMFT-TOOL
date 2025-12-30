@@ -22,6 +22,7 @@ public:
     GREEN,
     RED,
     BLUE,
+    WHITE
   };
   // 注册成QT独有的Enum
   Q_ENUM(TABLE_COLOR);
