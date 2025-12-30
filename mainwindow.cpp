@@ -260,7 +260,7 @@ void MainWindow::GUI_TableInit() {
         }
 
         // 6) 写入表格
-        pxTable->SetCellItem(row1, 1, sn, TableControl::GREEN);
+        pxTable->SetCellItem(row1, 1, sn, TableControl::WHITE);
 
         // 7) 清空输入框
         ui->lineEdit->clear();
