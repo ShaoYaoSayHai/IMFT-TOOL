@@ -352,3 +352,112 @@ ParseResult parseSnAndStatus(const QString& input)
     r.rawError = s;
     return r;
 }
+
+
+
+
+static bool extractXmlSegment(const QString& s, QString* outXml)
+{
+    if (!outXml) return false;
+    outXml->clear();
+
+    // 1) 优先截取 <root ... </root>
+    int start = s.indexOf(QLatin1String("<root"));
+    if (start >= 0) {
+        int end = s.indexOf(QLatin1String("</root>"), start);
+        if (end >= 0) {
+            end += int(strlen("</root>"));
+            *outXml = s.mid(start, end - start).trimmed();
+            return !outXml->isEmpty();
+        }
+        // 只有 <root ... 但无 </root>，不返回，继续走 <info> 兜底
+    }
+
+    // 2) 兜底截取 <info .../>
+    start = s.indexOf(QLatin1String("<info"));
+    if (start >= 0) {
+        int end = s.indexOf(QLatin1String("/>"), start);
+        if (end >= 0) {
+            end += 2;
+            *outXml = s.mid(start, end - start).trimmed();
+            return !outXml->isEmpty();
+        }
+        // 或 <info> ... </info>
+        end = s.indexOf(QLatin1String("</info>"), start);
+        if (end >= 0) {
+            end += int(strlen("</info>"));
+            *outXml = s.mid(start, end - start).trimmed();
+            return !outXml->isEmpty();
+        }
+    }
+
+    return false;
+}
+
+ParseResult parseSnAndRetmsg_StrongCompat(const QString& input)
+{
+    ParseResult r;
+    const QString s = input.trimmed();
+
+    // ---------- 1) 先截取 XML 片段 ----------
+    QString xml;
+    if (extractXmlSegment(s, &xml)) {
+        QXmlStreamReader xr(xml);
+
+        while (!xr.atEnd()) {
+            xr.readNext();
+
+            if (xr.isStartElement() &&
+                xr.name().toString().compare(QLatin1String("info"), Qt::CaseInsensitive) == 0) {
+
+                const QXmlStreamAttributes attrs = xr.attributes();
+
+                // 关键：遍历属性，做大小写不敏感匹配（比 attrs.value("SN") 更稳）
+                for (const QXmlStreamAttribute& a : attrs) {
+                    const QString key = a.name().toString();
+                    if (key.compare(QLatin1String("SN"), Qt::CaseInsensitive) == 0) {
+                        r.sn = a.value().toString();
+                    } else if (key.compare(QLatin1String("RETMSG"), Qt::CaseInsensitive) == 0) {
+                        r.retmsg = a.value().toString();
+                    }
+                }
+
+                r.ok = (r.retmsg.compare(QLatin1String("PASS"), Qt::CaseInsensitive) == 0);
+                r.status = r.ok ? QStringLiteral("PASS") : QStringLiteral("FAIL");
+                return r; // 找到 <info> 就返回
+            }
+        }
+
+        // XML 有但解析失败/没找到 info
+        r.rawError = xr.hasError()
+                   ? xr.errorString()
+                   : QStringLiteral("XML present but missing <info> element.");
+        // 不直接 return，继续走正则兜底
+    }
+
+    // ---------- 2) 正则兜底：从整段文本中提取 SN/RETMSG ----------
+    {
+        QRegularExpression reSn(QStringLiteral("SN\\s*=\\s*\"([^\"]+)\""));
+        QRegularExpressionMatch m = reSn.match(s);
+        if (m.hasMatch())
+            r.sn = m.captured(1).trimmed();
+    }
+    {
+        QRegularExpression reMsg(QStringLiteral("RETMSG\\s*=\\s*\"([^\"]+)\""));
+        QRegularExpressionMatch m = reMsg.match(s);
+        if (m.hasMatch())
+            r.retmsg = m.captured(1).trimmed();
+    }
+
+    r.ok = (r.retmsg.compare(QLatin1String("PASS"), Qt::CaseInsensitive) == 0);
+    r.status = r.ok ? QStringLiteral("PASS") : QStringLiteral("FAIL");
+
+    if (r.sn.isEmpty() || r.retmsg.isEmpty()) {
+        if (r.rawError.isEmpty())
+            r.rawError = QStringLiteral("SN/RETMSG not found.");
+    }
+
+    return r;
+}
+
+

@@ -21,10 +21,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     FileReadWrite/ModbusConfigParser.cpp \
     FileReadWrite/filerw.cpp \
+    FileReadWrite/mes_parse.cpp \
+    FileReadWrite/mes_sn_retmsg_parse.cpp \
     HttpClient/deviceinfo.cpp \
     HttpClient/httpclient.cpp \
     HttpClient/infoparse.cpp \
+    Logs/loggerworker.cpp \
     Logs/logs.cpp \
+    Logs/logservice.cpp \
     Modbus/ModbusReMapping.cpp \
     Modbus/ModbusWriteBuild.cpp \
     Modbus/gt_modbus.cpp \
@@ -40,10 +44,14 @@ SOURCES += \
 HEADERS += \
     FileReadWrite/ModbusConfigParser.h \
     FileReadWrite/filerw.h \
+    FileReadWrite/mes_parse.h \
+    FileReadWrite/mes_sn_retmsg_parse.h \
     HttpClient/deviceinfo.h \
     HttpClient/httpclient.h \
     HttpClient/infoparse.h \
+    Logs/loggerworker.h \
     Logs/logs.h \
+    Logs/logservice.h \
     Modbus/ModbusReMapping.h \
     Modbus/ModbusWriteBuild.h \
     Modbus/gt_modbus.h \

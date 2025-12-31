@@ -22,6 +22,7 @@ public:
     GREEN,
     RED,
     BLUE,
+    YELLOW ,
     WHITE
   };
   // 注册成QT独有的Enum

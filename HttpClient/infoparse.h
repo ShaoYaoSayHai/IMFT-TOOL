@@ -59,3 +59,7 @@ bool extractXmlFromServerResp(const QByteArray& respJsonBytes,
 
 // 解析MES CHECK的返回值
 ParseResult parseSnAndStatus(const QString& input) ;
+
+ParseResult parseSnAndRetmsg_StrongCompat(const QString& input) ;
+
+

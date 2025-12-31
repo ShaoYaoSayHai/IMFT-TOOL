@@ -590,7 +590,7 @@ void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
 #endif
     emit logCurrentStep(
                 "========================= 点火开阀测试 END =========================");
-
+    QThread::msleep(1000) ;
     emit simulateIgnitionComplete();
 }
 
@@ -683,6 +683,8 @@ void TestLoop::DO_SubmitInfoToMES(QList<DeviceInfo> data) {
         else
         {
             emit logCurrentStep("不合格 SN-- " + device.SN);
+            // EMIT SN
+            emit OMFT_FAIL( device.SN ) ;
         }
     }
 }

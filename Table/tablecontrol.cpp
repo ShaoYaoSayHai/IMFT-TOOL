@@ -39,6 +39,7 @@ void TableControl::SetCellItem(int row, int col, const QByteArray& qbyData, TABL
     switch (color) {
     case GREEN: item->setBackground(QColor(0, 255, 0)); break;
     case RED:   item->setBackground(QColor(255, 0, 0)); break;
+    case YELLOW: item->setBackground(QColor( 255,128,0 ));break;
     default:    item->setBackground(QColor(255, 255, 255)); break;
     }
 }

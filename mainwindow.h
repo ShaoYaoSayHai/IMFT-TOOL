@@ -16,6 +16,8 @@
 #include "./hexprintf.h"
 #include "./HttpClient/httpclient.h"
 #include "./HttpClient/infoparse.h"
+#include "./Logs/logservice.h"
+#include "./FileReadWrite/mes_parse.h"
 
 #include <QMessageBox>
 
@@ -50,6 +52,9 @@ private:
   DoTestType DoTestFlag = {false, false};
   // HTTP客户端操作
   HttpClient *pxHttpClient = new HttpClient( this );
+  // 文本日志系统
+  LogService px_m_logs;
+
 
 public slots:
 

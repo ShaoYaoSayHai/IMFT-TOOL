@@ -26,30 +26,36 @@ MainWindow::MainWindow(QWidget *parent)
     GUI_TableInit();
 
     // HTTP 客户端测试
-    //    pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251205_10015\" STA=\"OMFT\"/></root>" );
+//        pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251227_10090\" STA=\"OMFT\"/></root>" );
     //    pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251120_10006\" STA=\"OMFT\"/></root>" );
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::sendHttpParam , pxHttpClient , &HttpClient::postMesCheck );
     connect( pxHttpClient , &HttpClient::requestFinished , pxBrowserLogs , &Logs::LogBrowserWrite );
     connect( pxHttpClient , &HttpClient::MES_ResultReload , this , [=]( QString sn , bool status ){
         int row = findFirstColumnByLast2( pxTable->GetTableWidget() , sn.right(2)) ;
-        if( status )
+        qDebug()<<"MES UPDATE : "<<sn <<" STATUS : "<<status ;
+        if( status != false )
         {
             pxTable->SetCellItem( row+1 , 1 , sn.toUtf8() , TableControl::GREEN );
+            px_m_logs.appendWithTime( sn + " || RESULT PASS" );
         }
         else
         {
-            pxTable->SetCellItem( row+1 , 1 , sn.toUtf8() , TableControl::RED );
+            pxTable->SetCellItem( row+1 , 1 , sn.toUtf8() , TableControl::YELLOW );
+            px_m_logs.appendWithTime( sn + " || RESULT FAIL" );
         }
     } );
 
-    //    pxTable->SetCellItem( 1 , 1 , "CE02_251205_10151" , TableControl::WHITE );
-    //    pxTable->SetCellItem( 2 , 1 , "CE02_251205_10015" , TableControl::WHITE );
-    //    pxTable->SetCellItem( 3 , 1 , "CE02_251120_10006" , TableControl::WHITE );
-    //    qDebug()<<"匹配的行 : "<<findFirstColumnByLast2( ui->tableWidget , "51" ) ;
-    //    QTableWidget* w = pxTable->GetTableWidget();
-    //    qDebug()<<"当前的最大行数 : "<<w->rowCount() ;
-
     ui->pushButton_8->setVisible(false) ;
+
+    // 日志现场启动
+    px_m_logs.start("./Logs/scan_log.txt") ;
+
+    // DEMO
+
+//    QString message = "{\"d\": \"<root><info RETVAL=\"1\" RETMSG=\"FAIL\" MODEL=\"WM200\" WO=\"GZRQ\" SN=\"CE02_251227_10090\" IMEI1=\"866338088063554\" IMEI2=\"\" MAC1=\"\" MAC2=\"\" PWD=\"YkQzMzJN73\" ACS=\"https://acsdev.gatangtech.com/acsSouth/acs\" ICCID=\"89861125217035076792\" HOTNAME=\"\" HOTPWD=\"\" DEV_KEY=\"\" NAL=\"\" HOTNAME5=\"\" HOTPWD5=\"\" BTMAC=\"30495090FCA8\" MODULEVER=\"V106\" ROUTERVER=\"V107\" ORDERQUANTITY=\"3000\"/></root>\"}" ;
+//    QString errorMsg ;
+//    qDebug()<<"解析结果 : "<<parseRetmsgPassFromJsonCompat( message, &errorMsg ) ;
+
 }
 
 MainWindow::~MainWindow() {
@@ -67,6 +73,10 @@ MainWindow::~MainWindow() {
 
     // 清空整个TableWidget
     ui->tableWidget->setRowCount(0) ;
+
+    // 日志结束与回收
+    px_m_logs.append("AppExit | flushing logs");
+    px_m_logs.stop() ;
 
     delete ui;
 }
@@ -196,16 +206,6 @@ void MainWindow::GUI_TableInit() {
     connect(&(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
             &GT_Modbus::sig_updateSN, this, [=](QByteArray data) {
 #if ( VERSION < VERSION_BLD(1,4) )
-        // 在这里直接处理序列号更新逻辑
-        DeviceInfo device;
-        device.SN = data;
-        if (data.size() > 2)
-            device.slaveID = data.mid(data.size() - 2, data.size());
-        GT_DeviceList.append(device);
-        int size = GT_DeviceList.size();
-        pxTable->SetCellItem(size, 1, GT_DeviceList.at(size - 1).SN , TableControl::GREEN);
-        ui->lineEdit->setText("");
-        return ;
 #else
         // 基础校验
         const QByteArray sn = data.trimmed() ;
@@ -258,6 +258,8 @@ void MainWindow::GUI_TableInit() {
             w->setRowCount(row1);
         }
 
+        px_m_logs.appendWithTime(device.SN + " has joined the test");
+
         // 6) 写入表格
         pxTable->SetCellItem(row1, 1, sn, TableControl::WHITE);
 
@@ -270,21 +272,17 @@ void MainWindow::GUI_TableInit() {
             &GT_Modbus::sig_updateValveStatus, this,
             [=](uint8_t slaveID, uint8_t value) {
         // 在这里直接处理阀门状态更新逻辑
-        //            qDebug() << "从机地址:" << slaveID << "阀门状态:" << value;
-        //            qDebug() << "转换后查询地址 - " << QString::number(slaveID);
         for( DeviceInfo &device : GT_DeviceList )
         {
             if( device.slaveID.toUInt() == slaveID )
             {
                 device.sw_status = true ;
-                break ;
             }
         }
         // 遍历整个Table，然后查询到对应的item，value=0表示打开成功，1表示关闭成功
-        int row = (findFirstColumnByLast2(ui->tableWidget,QString::number(slaveID)));
+        int row = (findFirstColumnByLast2(ui->tableWidget,QString::number(slaveID , 16)));
         if( row == -1 ){return ;}
         if (value == 0) {
-            qDebug()<<"绘制行数"<<row ;
             pxTable->SetCellItem(row+1, 4, "PASS" , TableControl::GREEN);
         } else {
             pxTable->SetCellItem(row+1, 4, "FAIL" , TableControl::RED);
@@ -299,6 +297,14 @@ void MainWindow::GUI_TableInit() {
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::simulateIgnitionComplete , this , &MainWindow::checkAllSwitchStatus );
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::simulateLPT_Complete , this , &MainWindow::checkAllLowPressureValue );
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::simulateOPT_Complete , this , &MainWindow::checkAllOverPressureValue );
+
+    // 从MES提交不合格的返回
+    connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::OMFT_FAIL , this , [=](QByteArray SN){
+        // 不合格的SN
+        int row = findFirstColumnByLast2( pxTable->GetTableWidget() , SN.right(2) ) ;
+        pxTable->SetCellItem( row +1 , 1 , SN ,TableControl::RED ) ;
+        px_m_logs.appendWithTime(SN + " || RESULT FAIL");
+    } );
 }
 
 void MainWindow::onTimerTimeoutReadSN() {
@@ -386,9 +392,12 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1) {
  * @brief 欠压功能测试
  */
 void MainWindow::on_pushButton_clicked() {
+    for( DeviceInfo &device:GT_DeviceList )
+    {
+        device.low_press_status = false ; // 恢复默认
+    }
     DoTestFlag.QianYaTest = true;
     DoTestFlag.ChaoYaTest = false ;
-    //    pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
     pxTestWorkerHandler->OMFT_LowPressureFunc( GT_DeviceList );
     SetButtonDisable();
 }
@@ -422,7 +431,7 @@ void MainWindow::onTableMapping() {
                 device.airPressUpdateFlag = false ;
                 device.infPressUpdateFlag = false ;
                 int pressDiff = device.infPress - device.airPress;
-                if (pressDiff > 6000) {
+                if (pressDiff > 8000) {
                     pxTable->SetCellItem(
                                 (findFirstColumnByLast2(ui->tableWidget, device.slaveID) + 1), 3,
                                 QString::number(pressDiff).toUtf8() , TableControl::GREEN);
@@ -519,6 +528,10 @@ void MainWindow::checkAllOverPressureValue()
 
 void MainWindow::on_pushButton_3_clicked()
 {
+    for( DeviceInfo &device:GT_DeviceList )
+    {
+        device.over_press_status = false ; // 恢复默认
+    }
     DoTestFlag.ChaoYaTest = true;
     DoTestFlag.QianYaTest = false ;
     pxTestWorkerHandler->OMFT_OverPressureFunc(GT_DeviceList);
@@ -528,6 +541,10 @@ void MainWindow::on_pushButton_3_clicked()
 
 void MainWindow::on_pushButton_2_clicked()
 {
+    for( DeviceInfo &device:GT_DeviceList )
+    {
+        device.sw_status = false ; // 恢复默认
+    }
     pxTestWorkerHandler->OMFT_OpenFireFunc(GT_DeviceList);
     // 按钮互斥
     SetButtonDisable();
@@ -538,21 +555,21 @@ void MainWindow::on_pushButton_2_clicked()
  */
 void MainWindow::on_pushButton_4_clicked()
 {
-    //    QString info = InfoParser::generateXmlString("CE02_251120_10006" , "OMFT") ;
-    //    pxHttpClient->postMesCheck( info ) ;
-    pxTestWorkerHandler->OMFT_SubmitTestResultToMES(GT_DeviceList) ;
 
     for ( DeviceInfo device:GT_DeviceList ) {
         if( device.sw_status == true && device.low_press_status == true && device.over_press_status == true )
         {
+            // 允许进行提交
         }
         else
         {
             QString sn = device.SN;
             int row = findFirstColumnByLast2( pxTable->GetTableWidget() , sn.right(2) ) ;
             pxTable->SetCellItem( row +1 , 1 , sn.toUtf8() ,TableControl::RED ) ;
+            px_m_logs.appendWithTime(device.SN + " || RESULT FAIL");
         }
     }
+    pxTestWorkerHandler->OMFT_SubmitTestResultToMES(GT_DeviceList) ;
 }
 
 void MainWindow::on_pushButton_7_clicked()
@@ -577,11 +594,14 @@ void MainWindow::on_pushButton_7_clicked()
 void MainWindow::on_pushButton_8_clicked()
 {
     QByteArray SN = "CE02_251205_10151" ;
-    QString last2Str = SN.right(2).trimmed() ;
-    // 当前的已经存在过
-    QMessageBox::warning(nullptr,
-                         tr("重复的 SlaveID"),
-                         tr("检测到末尾两位（SlaveID）重复：%1\n已存在于第 %2 行。")
-                         .arg(last2Str)
-                         .arg((findFirstColumnByLast2( ui->tableWidget , last2Str )) + 1));
+
+    px_m_logs.append(SN + "|| RESULT FAIL");
+
+    for (DeviceInfo &device : GT_DeviceList)   // 注意这里是引用 &
+        {
+            device.sw_status = true;
+            device.low_press_status = true;
+            device.over_press_status = true;
+            device.Status = true;
+        }
 }

@@ -2,6 +2,8 @@
 #include <QNetworkRequest>
 #include "infoparse.h"
 #include "./FileReadWrite/filerw.h"
+#include "./FileReadWrite/mes_parse.h"
+#include "./FileReadWrite/mes_sn_retmsg_parse.h"
 
 HttpClient::HttpClient(QObject *parent)
     : QObject(parent)
@@ -112,10 +114,6 @@ void HttpClient::receive_net_results( QByteArray &data )
         qDebug().noquote() << "Decode failed:" << err;
         emit requestFinished( "MES FAIL :: "+err.toUtf8() );
     }
-
-    ParseResult res = parseSnAndStatus( xml.toUtf8() ) ;
-    // 信号量，用作修改UI界面
-    emit MES_ResultReload( res.sn , res.ok );
 }
 
 void HttpClient::onFinished(QNetworkReply *reply)
@@ -132,21 +130,26 @@ void HttpClient::onFinished(QNetworkReply *reply)
         // 2025年12月30日 新增代码
         if (path.endsWith("/MesCheck")) {
             QString errorMsg ;
-            if( parseRetmsgPassFromJson( responseString , &errorMsg ) != false )
+            if( parseRetmsgPassFromJsonCompat( responseString , &errorMsg ) != false )
             {
                 qDebug()<<"JSON解析通过 MES CHECK OK" ;
                 MesCheckCallbackParse(this->msg);
                 receive_net_results( response );
+                MesParseResult pr = parseSnAndRetmsg_CE02Compat(responseString);
+                qDebug() << "SN=" << pr.sn << "RETMSG=" << pr.retmsg << "OK=" << pr.ok << "ERR=" << pr.rawError;
+
+                // 信号量，用作修改UI界面
+                emit MES_ResultReload( pr.sn , true );
             }
             else
             {
                 qDebug()<<"MesCheck Error : "<<errorMsg ;
                 error_happen_call_back(errorMsg);
-                ParseResult res = parseSnAndStatus( responseString ) ;
+                MesParseResult pr = parseSnAndRetmsg_CE02Compat(responseString);
+                qDebug() << "SN=" << pr.sn << "RETMSG=" << pr.retmsg << "OK=" << pr.ok << "ERR=" << pr.rawError;
                 // 信号量，用作修改UI界面
-                emit MES_ResultReload( res.sn , res.ok );
+                emit MES_ResultReload( pr.sn , false );
             }
-
         }
         else if (path.endsWith("/MesUpdate")) {
             // 解析 update 返回

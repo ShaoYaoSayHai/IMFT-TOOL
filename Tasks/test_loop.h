@@ -144,6 +144,9 @@ signals:
   // 模拟超压检测执行完毕
   void simulateOPT_Complete();
 
+  // 返回提交不满足要求的SN
+  void OMFT_FAIL( QByteArray );
+
 };
 
 #endif // TESTTASK_H
