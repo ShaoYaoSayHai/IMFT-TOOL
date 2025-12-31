@@ -81,6 +81,10 @@ public slots:
   void onResetTestFlag();
   // 点火开阀完成后对所有阀门状态是否到位进行检测
   void checkAllSwitchStatus();
+  // 欠压检测后判断所有压力是否到位
+  void checkAllLowPressureValue();
+  // 超压检测后判断所有压力是否到位
+  void checkAllOverPressureValue();
 
 private slots:
 

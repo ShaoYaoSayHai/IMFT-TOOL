@@ -173,7 +173,6 @@ void MainWindow::GUI_TableInit() {
             &GT_Modbus::sig_updateAirPressure, this,
             [=](int slaveID, int location, int value) {
         QByteArray recvSN = QByteArray::number(slaveID);
-        //            pxBrowserLogs->LogBrowserWrite("SN : " + recvSN + "-value : " + QByteArray::number( value ) );
         for (DeviceInfo &device : GT_DeviceList) {
             if (device.slaveID.contains(recvSN)) {
                 if (location == GT_Modbus::AIR) {
@@ -298,6 +297,8 @@ void MainWindow::GUI_TableInit() {
     connect( pxSerialWorkerUART_Handler , &SerialWorker::logSendMessage , pxBrowserLogs , &Logs::LogBrowserWrite );
     // 点火开阀执行完毕 处理回调判定
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::simulateIgnitionComplete , this , &MainWindow::checkAllSwitchStatus );
+    connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::simulateLPT_Complete , this , &MainWindow::checkAllLowPressureValue );
+    connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::simulateOPT_Complete , this , &MainWindow::checkAllOverPressureValue );
 }
 
 void MainWindow::onTimerTimeoutReadSN() {
@@ -314,13 +315,10 @@ void MainWindow::onTimerTimeoutReadSN() {
     }
     bool ok = false;
     uint8_t tempSlaveID = id.toInt(&ok, 10);
-    //  qDebug() << "tempSlaveID - " << tempSlaveID << "status - " << ok;
     if (!ok) {
         return;
     }
     QByteArray qbyData =
-            //      GT_ModbusHandler.GT_ModbusWrite(tempSlaveID, 0x03, 0x4045, NULL,
-            //      0, NULL);
             pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler.GT_ModbusWrite(
                 tempSlaveID, 0x03, 0x4045, NULL, 0, NULL);
     HexPrintf(qbyData);
@@ -362,6 +360,8 @@ void MainWindow::on_pushButton_5_clicked() {
     pxBrowserLogs->LogBrowserClear() ;
     pxTable->ClearAllItems();
     GT_DeviceList.clear();
+
+    ResetButtonEnable();
 }
 
 void MainWindow::on_pushButton_6_clicked() {
@@ -387,6 +387,7 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1) {
  */
 void MainWindow::on_pushButton_clicked() {
     DoTestFlag.QianYaTest = true;
+    DoTestFlag.ChaoYaTest = false ;
     //    pxTestWorkerHandler->onReadAllBoardPressure(GT_DeviceList);
     pxTestWorkerHandler->OMFT_LowPressureFunc( GT_DeviceList );
     SetButtonDisable();
@@ -398,20 +399,19 @@ void MainWindow::onTableMapping() {
         for (DeviceInfo &device : GT_DeviceList) {
             if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
                 int pressDiff = device.infPress - device.airPress;
+                device.airPressUpdateFlag = false ;
+                device.infPressUpdateFlag = false ;
                 if (pressDiff < 800) {
                     pxTable->SetCellItem(
                                 (findFirstColumnByLast2(ui->tableWidget, device.slaveID) + 1), 2,
                                 QString::number(pressDiff).toUtf8(), TableControl::GREEN);
                     DeviceInfoReset(device);
-
                     device.low_press_status = true ;
-
                 } else {
                     pxTable->SetCellItem(
                                 (findFirstColumnByLast2(ui->tableWidget, device.slaveID) + 1), 2,
                                 QString::number(pressDiff).toUtf8() , TableControl::RED);
                     DeviceInfoReset(device);
-
                     device.low_press_status = false ;
                 }
             }
@@ -419,6 +419,8 @@ void MainWindow::onTableMapping() {
     } else if (DoTestFlag.ChaoYaTest) {
         for (DeviceInfo &device : GT_DeviceList) {
             if (device.airPressUpdateFlag && device.infPressUpdateFlag) {
+                device.airPressUpdateFlag = false ;
+                device.infPressUpdateFlag = false ;
                 int pressDiff = device.infPress - device.airPress;
                 if (pressDiff > 6000) {
                     pxTable->SetCellItem(
@@ -485,9 +487,40 @@ void MainWindow::checkAllSwitchStatus()
     ResetButtonEnable();
 }
 
+void MainWindow::checkAllLowPressureValue()
+{
+    for( DeviceInfo &device : GT_DeviceList )
+    {
+        if( device.low_press_status == false )
+        {
+            pxTable->SetCellItem(
+                        (findFirstColumnByLast2(ui->tableWidget, device.slaveID) + 1), 2,
+                        "FAIL" ,  TableControl::RED);
+        }
+    }
+    ResetButtonEnable();
+}
+
+void MainWindow::checkAllOverPressureValue()
+{
+    for( DeviceInfo &device : GT_DeviceList )
+    {
+        if( device.over_press_status == false )
+        {
+            pxTable->SetCellItem(
+                        (findFirstColumnByLast2(ui->tableWidget, device.slaveID) + 1), 3,
+                        "FAIL" ,  TableControl::RED);
+        }
+    }
+    ResetButtonEnable();
+}
+
+
+
 void MainWindow::on_pushButton_3_clicked()
 {
     DoTestFlag.ChaoYaTest = true;
+    DoTestFlag.QianYaTest = false ;
     pxTestWorkerHandler->OMFT_OverPressureFunc(GT_DeviceList);
     // 按钮互斥
     SetButtonDisable();
@@ -530,7 +563,12 @@ void MainWindow::on_pushButton_7_clicked()
         device.sw_status = false ;
         device.low_press_status = false ;
         device.over_press_status = false ;
+        device.infPressUpdateFlag = false ;
+        device.endPressUpdateFlag = false ;
+        device.airPressUpdateFlag = false ;
     }
+    DoTestFlag.ChaoYaTest = false;
+    DoTestFlag.QianYaTest = false;
     pxTestWorkerHandler->onBuildTaskInfo( GT_DeviceList );
 }
 

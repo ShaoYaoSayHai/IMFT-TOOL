@@ -42,9 +42,12 @@ public:
 
   // 桀桀桀 动态的函数 没见过吧
 //  QList<CommandParams> commandList;
-
-  // QList<TaskInfo> tasks
   QList<TaskInfo> tasks ;
+
+  // 欠压执行流程的任务
+  QList<TaskInfo> low_press_task_list ;
+
+  QList<TaskInfo> over_press_task_list ;
 
 private:
 public slots:
@@ -135,6 +138,11 @@ signals:
   // 获取到新的HTTP参数 发送给主线程
   void sendHttpParam( const QString data );
   // 点火开阀执行完毕
+
+  // 模拟欠压检测执行完毕
+  void simulateLPT_Complete();
+  // 模拟超压检测执行完毕
+  void simulateOPT_Complete();
 
 };
 

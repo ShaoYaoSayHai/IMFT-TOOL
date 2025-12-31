@@ -136,7 +136,7 @@ void TestWorker::OMFT_LowPressureFunc(QList<DeviceInfo> deviceList)
 {
     // DO_TaskCheckLowPressure// 为空返回
     if (deviceList.isEmpty()) {
-      return;
+//      return;
     }
     if (pxTestLoop) {
       QMetaObject::invokeMethod(pxTestLoop, "DO_TaskCheckLowPressure",
@@ -162,7 +162,7 @@ void TestWorker::OMFT_OverPressureFunc(QList<DeviceInfo> deviceList)
 {
     // DO_TaskOverPressure
     if (deviceList.isEmpty()) {
-      return;
+//      return;
     }
     if (pxTestLoop) {
       QMetaObject::invokeMethod(pxTestLoop, "DO_TaskOverPressure",

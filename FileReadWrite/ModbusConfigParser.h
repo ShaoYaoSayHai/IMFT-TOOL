@@ -56,6 +56,11 @@ public:
      */
     static QList<TaskInfo> parseConfigFromString(const QString& xmlContent, const QList<uint8_t>& gtSlaveIds);
 
+public slots:
+//    QList<TaskInfo> parseConfigWithCommandName(const QDomDocument &doc, const QList<uint8_t> &gtSlaveIds, QString rootNodeListName, QString nodeName);
+    static QList<TaskInfo> parseConfigWithCommandName(const QString &filePath, const QList<uint8_t> &gtSlaveIds, QString rootNodeListName, QString nodeName);
+private slots:
+    static QList<TaskInfo> parseConfigImplWithCommandName(const QDomDocument &doc, const QList<uint8_t> &gtSlaveIds, QString rootNodeListName, QString nodeName);
 private:
     /**
      * @brief 解析十六进制字符串到字节数组

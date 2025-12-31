@@ -57,6 +57,12 @@ void TestLoop::TestTaskInit() {
 //    gtSlaveIds<<0xC1<<0xC2<<0xC3 ;
     tasks = ModbusConfigParser::parseConfig("./buildConfig.xml", gtSlaveIds);
 
+    QList<uint8_t> gtDemoIds ;
+    low_press_task_list = ModbusConfigParser::parseConfigWithCommandName("./buildConfig.xml" , gtDemoIds , "CommandConfigLowPressureTestList" , "CommandConfig" ) ;
+
+//    for( TaskInfo task : low_press_task_list ){
+//        task.printInfo();
+//    }
 //    qDebug() << "从文件解析到" << tasks.size() << "个任务:";
 //    qDebug() << "========================================";
 //    // 打印所有任务信息
@@ -433,12 +439,16 @@ void TestLoop::CTL_SetInputControlDeviceSwitchClose(QByteArray address) {
 void TestLoop::BuildGTDeviceSlaveID( QList<DeviceInfo> deviceInfoList )
 {
     tasks.clear() ;
+    low_press_task_list.clear() ;
+    over_press_task_list.clear() ;
     QList<uint8_t> gtSlaveIds ;
     for( int i=0;i<deviceInfoList.size();i++ )
     {
         gtSlaveIds.append( deviceInfoList[i].slaveID.toUInt() ) ;
     }
     tasks = ModbusConfigParser::parseConfig("./buildConfig.xml", gtSlaveIds);
+    low_press_task_list = ModbusConfigParser::parseConfigWithCommandName("./buildConfig.xml" , gtSlaveIds , "CommandConfigLowPressureTestList" , "CommandConfig" ) ;
+    over_press_task_list = ModbusConfigParser::parseConfigWithCommandName("./buildConfig.xml" , gtSlaveIds , "CommandconfigOverPressureTestList" , "CommandConfig" ) ;
 }
 
 void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
@@ -446,6 +456,7 @@ void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
     emit logCurrentStep(
                 "========================= 欠压功能测试 BEGIN =========================");
     emit logCurrentStep("进入产测模式");
+#if 0
     GT_EnterFactoryModeAll(data);
     emit logCurrentStep("即将开启所有控制阀");
     // 执行所有阀门打开
@@ -461,17 +472,10 @@ void TestLoop::DO_TaskCheckLowPressure(QList<DeviceInfo> data) {
     // 退出产测模式
     emit logCurrentStep("退出产测模式");
     GT_ExitFactoryModeAll(data);
-    emit logCurrentStep(
-                "========================= 欠压功能测试 END =========================");
-}
-
-void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
-
-    emit logCurrentStep(
-                "========================= 点火开阀测试 BEGIN =========================");
+#else
     // 打印所有任务信息
-    for (int i = 0; i < tasks.size(); i++) {
-        TaskInfo& task = tasks[i];
+    for (TaskInfo task:low_press_task_list) {
+        task.printInfo();
         // 当没有从机ID的时候，导入设备ID
         if( task.slave_ids.size() < 1 )
         {
@@ -499,6 +503,53 @@ void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
             else if( task.read_length != 0 )
             {
 //                qDebug()<<"slaveID : "<<task.slave_ids[i]<<"  func : "<<task.func ;
+                // 准备发出数据
+                emit sendMethodToSerial( GT_ModbusHandler.GT_ModbusWrite( task.slave_ids[i] , task.func , task.address , NULL , 00 , NULL ) ) ;
+                QThread::msleep( task.time_interval ) ;
+            }
+        }
+    }
+
+#endif
+    emit logCurrentStep(
+                "========================= 欠压功能测试 END =========================");
+    // 执行完毕
+    QThread::msleep(1000) ;
+    emit simulateLPT_Complete();
+}
+
+void TestLoop::DO_TaskOpenFire(QList<DeviceInfo> data) {
+
+    emit logCurrentStep(
+                "========================= 点火开阀测试 BEGIN =========================");
+    // 打印所有任务信息
+    for (int i = 0; i < tasks.size(); i++) {
+        TaskInfo& task = tasks[i];
+        // 当没有从机ID的时候，导入设备ID
+        if( task.slave_ids.size() < 1 )
+        {
+            emit logCurrentStep( "++++++++++++++++++ ERROR 未输入SN号" );
+            return ;
+        }
+        emit logCurrentStep("当前任务ID"+QByteArray::number(task.id)) ;
+        // 遍历所有循环执行 遍历从机ID
+        for( int i=0;i<task.slave_ids.size();i++ )
+        {
+            if( task.write_buffers.size() > 0 )
+            {
+                for( int j=0;j<task.write_buffers.size();j++ )
+                {
+                    uint8_t *write_buffer = new uint8_t[ task.write_buffers[j].size() ];
+                    memcpy(write_buffer, task.write_buffers[j].constData(), task.write_buffers[j].size());
+//                    qDebug()<<"slaveID : "<<task.slave_ids[i]<<"  func : "<<task.func<<"  writeBuffer : "<<task.write_buffers[j].toUpper() ;
+                    // 准备发出数据
+                    emit sendMethodToSerial( GT_ModbusHandler.GT_ModbusWrite( task.slave_ids[i] , task.func , task.address , write_buffer , task.write_buffers[j].size() , NULL ) ) ;
+                    delete[] write_buffer ;
+                    QThread::msleep( task.time_interval ) ; // 分别进行延迟处理
+                }
+            }
+            else if( task.read_length != 0 )
+            {
                 // 准备发出数据
                 emit sendMethodToSerial( GT_ModbusHandler.GT_ModbusWrite( task.slave_ids[i] , task.func , task.address , NULL , 00 , NULL ) ) ;
                 QThread::msleep( task.time_interval ) ;
@@ -548,6 +599,7 @@ void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data) {
                 "========================= 超压功能测试 BEGIN =========================");
     // 进入产测模式
     emit logCurrentStep("进入产测模式");
+#if 0
     GT_EnterFactoryModeAll(data);
     emit logCurrentStep("关闭所有阀门");
     CTL_DeviceSwitchCloseAll();
@@ -568,12 +620,54 @@ void TestLoop::DO_TaskOverPressure(QList<DeviceInfo> data) {
     emit logCurrentStep("关闭进气端阀门" + Addr);
     CTL_SetInputControlDeviceSwitchClose(Addr);
     // 退出产测模式
-    emit logCurrentStep("退出产测模式");
+
     GT_ExitFactoryModeAll(data);
+
+#else
+    // 打印所有任务信息
+    for (TaskInfo task:over_press_task_list) {
+        task.printInfo();
+        // 当没有从机ID的时候，导入设备ID
+        if( task.slave_ids.size() < 1 )
+        {
+            emit logCurrentStep( "++++++++++++++++++ ERROR 未输入SN号" );
+            return ;
+        }
+        emit logCurrentStep("当前任务ID"+QByteArray::number(task.id)) ;
+        // 遍历所有循环执行 遍历从机ID
+        for( int i=0;i<task.slave_ids.size();i++ )
+        {
+            if( task.write_buffers.size() > 0 )
+            {
+                for( int j=0;j<task.write_buffers.size();j++ )
+                {
+                    uint8_t *write_buffer = new uint8_t[ task.write_buffers[j].size() ];
+                    memcpy(write_buffer, task.write_buffers[j].constData(), task.write_buffers[j].size());
+                    // 准备发出数据
+                    emit sendMethodToSerial( GT_ModbusHandler.GT_ModbusWrite( task.slave_ids[i] , task.func , task.address , write_buffer , task.write_buffers[j].size() , NULL ) ) ;
+                    delete[] write_buffer ;
+                    QThread::msleep( task.time_interval ) ; // 分别进行延迟处理
+                }
+            }
+            else if( task.read_length != 0 )
+            {
+                // 准备发出数据
+                emit sendMethodToSerial( GT_ModbusHandler.GT_ModbusWrite( task.slave_ids[i] , task.func , task.address , NULL , 00 , NULL ) ) ;
+                QThread::msleep( task.time_interval ) ;
+            }
+        }
+    }
+
+#endif
+    emit logCurrentStep("退出产测模式");
     emit logCurrentStep(
                 "========================= 超压功能测试 END =========================");
     // 设置常开模式
 //    LST_CommandPollSetSwitchMode( data );
+
+    // 执行完毕
+    QThread::msleep(1000) ;
+    emit simulateOPT_Complete();
 }
 
 void TestLoop::DO_SubmitInfoToMES(QList<DeviceInfo> data) {

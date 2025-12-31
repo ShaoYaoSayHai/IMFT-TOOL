@@ -249,3 +249,160 @@ QList<TaskInfo> ModbusConfigParser::parseConfigFromString(const QString& xmlCont
     qDebug() << "成功从字符串加载XML配置";
     return parseConfigImpl(doc, gtSlaveIds);
 }
+
+
+QList<TaskInfo> ModbusConfigParser::parseConfigImplWithCommandName(const QDomDocument& doc, const QList<uint8_t>& gtSlaveIds , QString rootNodeListName , QString nodeName)
+{
+    QList<TaskInfo> tasks;
+
+    QDomElement root = doc.documentElement();
+    if (root.isNull()) {
+      qDebug() << "[错误] 未找到根元素（Root）。";
+      return tasks;
+    }
+    QDomElement buildCommand = root.firstChildElement(rootNodeListName);
+    if (buildCommand.isNull()) {
+      qDebug() << "[错误] 未找到 CommandConfigList 节点。";
+      return tasks ;
+    }
+
+    // 遍历所有CommandConfig节点
+    QDomNodeList configNodes = buildCommand.elementsByTagName(nodeName);
+    for (int i = 0; i < configNodes.count(); i++) {
+        QDomElement configElem = configNodes.at(i).toElement();
+        if (configElem.isNull()) continue;
+
+        TaskInfo task;
+
+        // 解析id
+        QDomElement idElem = configElem.firstChildElement("id");
+        if (!idElem.isNull()) {
+            task.id = idElem.text().toInt();
+        }
+
+        // 解析enable
+        QDomElement enableElem = configElem.firstChildElement("enable");
+        if (!enableElem.isNull()) {
+            QString enableText = enableElem.text().trimmed().toLower();
+            task.enable = (enableText == "true" || enableText == "1");
+        }
+
+        QDomElement timeIntervalElem = configElem.firstChildElement("time_interval") ;
+        if( !timeIntervalElem.isNull() ){
+            int intervalText = timeIntervalElem.text().trimmed().toUInt();
+            task.time_interval = intervalText ;
+        }
+
+        // 解析slave_id（根据type属性处理）
+        QDomElement slaveIdElem = configElem.firstChildElement("slave_id");
+        if (!slaveIdElem.isNull()) {
+            QString type = slaveIdElem.attribute("type");
+            QString content = slaveIdElem.text().trimmed();
+
+            if (type == "GT") {
+                // 使用外部传入的gtSlaveIds
+                task.slave_ids = gtSlaveIds;
+            } else if (type == "LST") {
+                // 解析LST类型的逗号分隔地址列表
+                task.slave_ids = parseSlaveIds(content);
+            } else {
+                // 如果没有指定type，默认使用文本内容
+                task.slave_ids = parseSlaveIds(content);
+            }
+        }
+
+        // 解析func
+        QDomElement funcElem = configElem.firstChildElement("func");
+        if (!funcElem.isNull()) {
+            QString funcStr = funcElem.text().trimmed();
+            if (funcStr.startsWith("0x", Qt::CaseInsensitive)) {
+                task.func = static_cast<uint8_t>(funcStr.mid(2).toUInt(nullptr, 16));
+            } else {
+                task.func = static_cast<uint8_t>(funcStr.toUInt());
+            }
+        }
+
+        // 解析address
+        QDomElement addrElem = configElem.firstChildElement("address");
+        if (!addrElem.isNull()) {
+            QString addrStr = addrElem.text().trimmed();
+            if (addrStr.startsWith("0x", Qt::CaseInsensitive)) {
+                task.address = static_cast<uint16_t>(addrStr.mid(2).toUInt(nullptr, 16));
+            } else {
+                task.address = static_cast<uint16_t>(addrStr.toUInt());
+            }
+        }
+
+        // 解析write_buffers：处理多个步骤（step属性）
+        QDomNodeList writeBufferNodes = configElem.elementsByTagName("write_buffer");
+        QMap<int, QByteArray> stepBuffers; // 使用QMap按step排序
+
+        for (int j = 0; j < writeBufferNodes.count(); j++) {
+            QDomElement bufferElem = writeBufferNodes.at(j).toElement();
+            if (bufferElem.isNull()) continue;
+
+            // 获取step属性（默认1）
+            int step = 1;
+            if (bufferElem.hasAttribute("step")) {
+                step = bufferElem.attribute("step").toInt();
+            }
+
+            // 解析缓冲区内容
+            QString bufferContent = bufferElem.text().trimmed();
+            QByteArray bufferData = parseHexString(bufferContent);
+
+            if (!bufferData.isEmpty()) {
+                stepBuffers.insert(step, bufferData);
+            }
+        }
+
+        // 按step顺序存储到task.write_buffers
+        QList<int> steps = stepBuffers.keys();
+        std::sort(steps.begin(), steps.end());
+        for (int step : steps) {
+            task.write_buffers.append(stepBuffers[step]);
+        }
+
+        // 解析read_length
+        QDomElement readLenElem = configElem.firstChildElement("read_length");
+        if (!readLenElem.isNull()) {
+            task.read_length = readLenElem.text().toInt();
+        } else {
+            task.read_length = 0; // 0表示写操作
+        }
+
+        tasks.append(task);
+    }
+
+    return tasks;
+}
+
+
+QList<TaskInfo> ModbusConfigParser::parseConfigWithCommandName(const QString& filePath, const QList<uint8_t>& gtSlaveIds , QString rootNodeListName , QString nodeName )
+{
+    QFile file(filePath);
+    if (!file.exists()) {
+        qWarning() << "文件不存在:" << filePath;
+        return QList<TaskInfo>();
+    }
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "无法打开文件:" << filePath;
+        return QList<TaskInfo>();
+    }
+
+    QDomDocument doc;
+    QString errorMsg;
+    int errorLine, errorColumn;
+
+    if (!doc.setContent(&file, &errorMsg, &errorLine, &errorColumn)) {
+        qWarning() << "XML解析错误:" << errorMsg << "行:" << errorLine << "列:" << errorColumn;
+        file.close();
+        return QList<TaskInfo>();
+    }
+
+    file.close();
+
+    qDebug() << "成功从文件加载XML配置:" << filePath;
+    return parseConfigImplWithCommandName(doc, gtSlaveIds , rootNodeListName , nodeName);
+}
