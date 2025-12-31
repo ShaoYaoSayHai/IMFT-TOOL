@@ -22,6 +22,7 @@ SOURCES += \
     FileReadWrite/ModbusConfigParser.cpp \
     FileReadWrite/filerw.cpp \
     FileReadWrite/mes_parse.cpp \
+    FileReadWrite/mes_retmsg_parser.cpp \
     FileReadWrite/mes_sn_retmsg_parse.cpp \
     HttpClient/deviceinfo.cpp \
     HttpClient/httpclient.cpp \
@@ -45,6 +46,7 @@ HEADERS += \
     FileReadWrite/ModbusConfigParser.h \
     FileReadWrite/filerw.h \
     FileReadWrite/mes_parse.h \
+    FileReadWrite/mes_retmsg_parser.h \
     FileReadWrite/mes_sn_retmsg_parse.h \
     HttpClient/deviceinfo.h \
     HttpClient/httpclient.h \

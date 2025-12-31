@@ -82,13 +82,17 @@ int GT_Modbus::GT_RetMsgVerify(QByteArray data) {
       emit sig_updateSN(qbyData);          // 更新SN号
     } else if (regAddress == 0x4033) {     /* 读取阀门状态 */
       uint8_t valveStatus = qbyData.at(0); // 阀门状态更新
-      emit sig_updateValveStatus((uint8_t)(data.at(0)),
+      QByteArray hexSlaveID = QByteArray::number(static_cast<quint8>(data.at(0)), 10);
+      qDebug()<<"hexSlaveID : "<<hexSlaveID ;
+      emit sig_updateValveStatus( hexSlaveID,
                                  valveStatus); // 返回SN号和对应的阀门状态
     }
   }
   // 解析写入的返回值
   else if (data.at(1) == 0x06) {
   }
+
+  return GT_Modbus::SUCCESS ;
 }
 
 void DeviceInfoReset(DeviceInfo &device) {

@@ -678,7 +678,7 @@ void TestLoop::DO_SubmitInfoToMES(QList<DeviceInfo> data) {
             QString info = InfoParser::generateXmlString(sn, "OMFT");
             emit logCurrentStep("GET -- " + info.toUtf8());
             emit sendHttpParam( info );
-            QThread::msleep(200) ;
+            QThread::msleep(1000) ;
         }
         else
         {

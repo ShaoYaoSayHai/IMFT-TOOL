@@ -13,6 +13,9 @@
 #include <functional>
 #include "config/version_config.h"
 #include "./infoparse.h"
+#include "./FileReadWrite/mes_retmsg_parser.h"
+
+#include <QThread>
 
 class HttpClient : public QObject
 {

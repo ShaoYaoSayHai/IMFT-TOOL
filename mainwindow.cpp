@@ -26,8 +26,8 @@ MainWindow::MainWindow(QWidget *parent)
     GUI_TableInit();
 
     // HTTP 客户端测试
-//        pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251227_10090\" STA=\"OMFT\"/></root>" );
-    //    pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251120_10006\" STA=\"OMFT\"/></root>" );
+        pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251227_10012\" STA=\"OMFT\"/></root>" );
+        pxHttpClient->postMesCheck( "<root><info SN=\"CE02_251227_10208\" STA=\"OMFT\"/></root>" );
     connect( pxTestWorkerHandler->pxTestLoop , &TestLoop::sendHttpParam , pxHttpClient , &HttpClient::postMesCheck );
     connect( pxHttpClient , &HttpClient::requestFinished , pxBrowserLogs , &Logs::LogBrowserWrite );
     connect( pxHttpClient , &HttpClient::MES_ResultReload , this , [=]( QString sn , bool status ){
@@ -45,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     } );
 
-    ui->pushButton_8->setVisible(false) ;
+//    ui->pushButton_8->setVisible(false) ;
 
     // 日志现场启动
     px_m_logs.start("./Logs/scan_log.txt") ;
@@ -55,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    QString message = "{\"d\": \"<root><info RETVAL=\"1\" RETMSG=\"FAIL\" MODEL=\"WM200\" WO=\"GZRQ\" SN=\"CE02_251227_10090\" IMEI1=\"866338088063554\" IMEI2=\"\" MAC1=\"\" MAC2=\"\" PWD=\"YkQzMzJN73\" ACS=\"https://acsdev.gatangtech.com/acsSouth/acs\" ICCID=\"89861125217035076792\" HOTNAME=\"\" HOTPWD=\"\" DEV_KEY=\"\" NAL=\"\" HOTNAME5=\"\" HOTPWD5=\"\" BTMAC=\"30495090FCA8\" MODULEVER=\"V106\" ROUTERVER=\"V107\" ORDERQUANTITY=\"3000\"/></root>\"}" ;
 //    QString errorMsg ;
 //    qDebug()<<"解析结果 : "<<parseRetmsgPassFromJsonCompat( message, &errorMsg ) ;
-
+    setWindowTitle("OMFT测试工具V1.0.11");
 }
 
 MainWindow::~MainWindow() {
@@ -270,17 +270,20 @@ void MainWindow::GUI_TableInit() {
     // 槽函数绑定，将结果显示在窗口内
     connect(&(pxTestWorkerHandler->pxTestLoop->GT_ModbusHandler),
             &GT_Modbus::sig_updateValveStatus, this,
-            [=](uint8_t slaveID, uint8_t value) {
+            [=](QByteArray slaveID, uint8_t value) {
         // 在这里直接处理阀门状态更新逻辑
         for( DeviceInfo &device : GT_DeviceList )
         {
-            if( device.slaveID.toUInt() == slaveID )
+            qDebug()<<" ID : "<<device.slaveID ;
+            if( device.slaveID == slaveID )
             {
                 device.sw_status = true ;
+                break ;
             }
         }
         // 遍历整个Table，然后查询到对应的item，value=0表示打开成功，1表示关闭成功
-        int row = (findFirstColumnByLast2(ui->tableWidget,QString::number(slaveID , 16)));
+        int row = (findFirstColumnByLast2(ui->tableWidget, slaveID ));
+        qDebug()<<"匹配行数 : "<<row +1<<" ID : "<<slaveID ;
         if( row == -1 ){return ;}
         if (value == 0) {
             pxTable->SetCellItem(row+1, 4, "PASS" , TableControl::GREEN);

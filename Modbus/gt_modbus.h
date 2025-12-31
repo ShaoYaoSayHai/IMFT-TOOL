@@ -100,7 +100,7 @@ signals:
   // 更新大气压值
   void sig_updateAirPressure(int sn, int location, int value);
   // 更新阀门状态
-  void sig_updateValveStatus(int sn, int value);
+  void sig_updateValveStatus(QByteArray sn, int value);
 
   // 返回接收信息
   void GT_ReadInfo( QByteArray data );

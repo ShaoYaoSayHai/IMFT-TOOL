@@ -85,6 +85,7 @@ void HttpClient::MesCheckCallbackParse( QByteArray &jsonPayload )
     {
         const QString sn    = map.value(QStringLiteral("SN"));
         const QString update_info = buildInputXmlBytes( sn , "OMFT" , "PASS" );
+        qDebug()<<"UPDATE INFO : "<<update_info ;
         this->postMesUpdate( update_info ); // 更新
     }
 }
@@ -137,7 +138,6 @@ void HttpClient::onFinished(QNetworkReply *reply)
                 receive_net_results( response );
                 MesParseResult pr = parseSnAndRetmsg_CE02Compat(responseString);
                 qDebug() << "SN=" << pr.sn << "RETMSG=" << pr.retmsg << "OK=" << pr.ok << "ERR=" << pr.rawError;
-
                 // 信号量，用作修改UI界面
                 emit MES_ResultReload( pr.sn , true );
             }
@@ -153,7 +153,13 @@ void HttpClient::onFinished(QNetworkReply *reply)
         }
         else if (path.endsWith("/MesUpdate")) {
             // 解析 update 返回
-            receive_net_results( response );
+//            receive_net_results( response );
+            QString SN , retMsg ;
+            bool submit_result = parseMesRetmsgAndExtractSn(responseString , &SN , &retMsg  );
+            if( submit_result == false )
+            {
+                emit MES_ResultReload( SN , true ); // 已经不在当前工站，意味着之前提交成功
+            }
         }
     }
     else
